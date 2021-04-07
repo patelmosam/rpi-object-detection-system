@@ -51,11 +51,18 @@ def capture():
 	return render_template('index.html', data=jdata, filename=filename, isData=True)
 	
 @app.route('/stream')
-def index():
+def stream():
 	"""Video streaming home page."""
 	video_url = HOST_NAME + "/video_feed"
 	return render_template('stream.html', video_url=video_url)
 
+@app.route('/history')
+def get_history():
+	response = requests.get(HOST_NAME + "/release_cam")
+	conn = sqlite3.connect('database.db')
+	data = get_all_data(conn)
+
+	return render_template('history.html', data=data)
 
 if __name__ == '__main__':
     app.run(port=8000, debug=True, host='0.0.0.0')

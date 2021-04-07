@@ -66,6 +66,15 @@ def video_feed():
 	camera = cv2.VideoCapture(0)
 	return Response(gen_frames(camera), mimetype='multipart/x-mixed-replace; boundary=frame')
 
+@app.route('/release_cam')
+def release_cam():
+	global camera
+	if camera is not None:
+		camera.release()
+		camera = None
+	
+	return "True"
+
 if __name__ == "__main__":
     app.run(debug=True)
     #app.run(debug=True, port=8080, host='0.0.0.0')

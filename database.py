@@ -19,8 +19,19 @@ def insert_data(conn, image_id, bbox, classes, scores, no_det):
     print("added to database")
     conn.close()
 
+def get_all_data(conn):
+    c = conn.cursor()
+
+    c.execute("SELECT * From Detections")
+
+    row = c.fetchall()
+
+    return row
+
 if __name__ == '__main__':
     #Init_db()
     conn = sqlite3.connect('database.db')
 
-    insert_data(conn, "0", "[12,23,45,67]", "[1]", "[0.99]", "1")
+    # insert_data(conn, "0", "[12,23,45,67]", "[1]", "[0.99]", "1")
+
+    get_all_data(conn)

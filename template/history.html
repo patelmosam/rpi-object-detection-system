@@ -30,18 +30,32 @@
     </div>
 
     <div id="main" >
-        <div class="img">
-            <!-- <div class="col-lg-8  offset-lg-2"> -->
-                <h3 class="mt-5">Live Streaming</h3>
-                <img src="{{video_url}}" width="60%" height="80%">
-            <!-- </div> -->
+        <!-- <div class="img">
+            <img src={{filename}} class="rounded float-start">
+        </div> -->
+        <h3>Detection History</h3>
+
+        <div class="tabl" style="height: 785px; width: 900px;">
+            <table id="jsondata" style="width:100%">
+                <tr>
+                    <th>Image Id</th>
+                    <th>Class</th>
+                    <th>BBox</th>
+                    <th>Score</th>
+                    <th>Detections</th>
+                </tr>
+                {% for d in data %}
+                <tr>
+                    <td>{{d[0]}}</td>
+                    <td>{{d[1]}}</td>
+                    <td>{{d[2]}}</td>
+                    <td>{{d[3]}}</td>
+                    <td>{{d[4]}}</td>
+                </tr>
+                {% endfor %}
+            </table>
         </div>
 
-        <div class="center">
-            <a href="/capture">
-                <button class="capture">Capture</button>
-            </a>
-        </div>
     </div>
 
     </main>
