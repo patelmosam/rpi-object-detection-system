@@ -1,5 +1,5 @@
 from flask import Flask
-from flask import request, jsonify, render_template, redirect
+from flask import request, jsonify, render_template, redirect, send_file
 import requests
 from database import *
 import json
@@ -63,6 +63,20 @@ def get_history():
 	data = get_all_data(conn)
 
 	return render_template('history.html', data=data)
+
+@app.route('/his_result/<id>')
+def get_his_data(id):
+	conn = sqlite3.connect('database.db')
+	data = get_data_id(conn, id)
+	print(type(data))
+	filename = "http://127.0.0.1:8000/img/"+str(id)
+
+	return render_template('his_result.html', data=data[0], filename=filename)
+
+@app.route('/img/<id>', methods=['GET'])
+def get_img(id):
+	filename = './images/' + str(id) + '.png'
+	return send_file(filename, mimetype='image/gif')
 
 if __name__ == '__main__':
     app.run(port=8000, debug=True, host='0.0.0.0')

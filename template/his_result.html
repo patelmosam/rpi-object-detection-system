@@ -2,10 +2,12 @@
 {% block content %}
   
 
-   <div id="main" class="container-md">
+<div id="main" class="container-md">
  
-        <h3>Detection History</h3>
-        
+        <div id="image" class="container-md">
+            <img src={{filename}} class="img-fluid" alt="Responsive image">
+        </div>
+
         <div id="data" class="container-md">
             <table class="table table-bordered table-responsive table-success table-striped">
                 <thead>
@@ -18,21 +20,24 @@
                 </tr>
                 </thead>
                 <tbody>
-                {% for d in data %}
                 <tr>
-                    <td>
-                        <a href="/his_result/{{d[0]}}">{{d[0]}}</a>
-                    </td>
-                    <td>{{d[1]}}</td>
-                    <td>{{d[2]}}</td>
-                    <td>{{d[3]}}</td>
-                    <td>{{d[4]}}</td>
+                    <td>{{data[0]}}</td>
+                    <td>{{data[1]}}</td>
+                    <td>{{data[2]}}</td>
+                    <td>{{data[3]}}</td>
+                    <td>{{data[4]}}</td>
                 </tr>
-                {% endfor %}
+            
             </tbody>
             </table>
         </div>
 
-    </div>
+        <div id="button" class="container-md">
+            <a href="/history">
+              <button class="btn btn-primary">Back</button>
+            </a>
+        </div>
 
-    {% endblock %}
+</div>
+
+{% endblock %}
