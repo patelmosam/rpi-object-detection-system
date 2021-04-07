@@ -1,0 +1,26 @@
+import sqlite3
+
+def Init_db():
+    conn = sqlite3.connect('database.db')
+    print("Opened database successfully")
+
+    conn.execute('CREATE TABLE Detections (image_id TEXT, bbox TEXT, classes TEXT, score TEXT, no_det TEXT)')
+    print("Table created successfully")
+    conn.close()
+
+
+def insert_data(conn, image_id, bbox, classes, scores, no_det):
+    c = conn.cursor()
+
+    c.execute("INSERT INTO Detections VALUES (\""+ image_id +"\",\""+ bbox +"\",\""+ classes +"\",\""+ scores +"\",\""+ no_det +"\")")
+
+    conn.commit()
+
+    print("added to database")
+    conn.close()
+
+if __name__ == '__main__':
+    #Init_db()
+    conn = sqlite3.connect('database.db')
+
+    insert_data(conn, "0", "[12,23,45,67]", "[1]", "[0.99]", "1")
