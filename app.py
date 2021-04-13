@@ -4,19 +4,23 @@ import requests
 from database import *
 import json
 from utils import *
+# from Rpi_backend import 
 
 HOST_NAME = "http://127.0.0.1:5000"
+# HOST_NAME = "http://192.168.108.55:8080"
 
 app = Flask(__name__, template_folder='template')
 
 
 @app.route('/', methods=['GET'])
 def home():
-	r = requests.get(HOST_NAME)
-	if r.status_code == 200:
-		return render_template('index.html', data=None, filename=None, isData=False)
-	else:
-		return "<h2>server is not responding</h2>"
+	try:
+		r = requests.get(HOST_NAME)
+	
+		if r.status_code == 200:
+			return render_template('home.html', connection = True)
+	except:
+		return render_template('home.html', connection=False)
 	
 @app.route('/capture', methods=['GET'])
 def capture():
@@ -25,30 +29,46 @@ def capture():
 	print(response)
 	if response.status_code != 200:
 		return "<h2>server is not responding</h2>"
+	
+	data = response.json()
+	data = json.loads(data)
+	id = data['image_id']
 
-	try:
-		id = response.json()['image_id']
-		data = response.text
-	except:
-		error = response.json()['error']
-		msg = response.json()['msg']
-		return "<h2> " + msg + "</h2>"
+	predictions = [np.array([data['boxes']]), np.array([data['scores']]), np.array([data['classes']]), np.array([int(data['no_det'])])]
+	print(predictions)
+	# try:
+	# 	id = response.json()['image_id']
+	# 	data = response.text
+	# except:
+	# 	error = response.json()['error']
+	# 	msg = response.json()['msg']
+	# 	return "<h2> " + msg + "</h2>"
 		
-	filename = HOST_NAME + "/api/img/"+str(id)
-	print(filename)
+	img_url = HOST_NAME + "/api/img/"+str(id)
+	print(img_url)
 
-	jdata = json.loads(data)
-
-	r = requests.get(filename)
-	file = open('images/'+jdata['image_id']+'.png', 'wb')
+	r = requests.get(img_url)
+	
+	file = open('images/'+id+'.jpg', 'wb')
 	file.write(r.content)
 	file.close()
 
-	if jdata['no_det'] != "0":
-		conn = sqlite3.connect('database.db')
-		insert_data(conn, jdata['image_id'], jdata['boxes'], jdata['classes'], jdata['scores'], jdata['no_det'])
+	if data['no_det'] != "0":
+		print("adding to database")
+		make_bbox(predictions, id)
+		bbox, classes, scores = convert_data(data)
+		classes_name = get_class_names(data['classes'])
 
-	return render_template('index.html', data=jdata, filename=filename, isData=True)
+		conn = sqlite3.connect('database.db')
+		insert_data(conn, (id, bbox, classes_name, scores, data['no_det']))
+		# insert_data(conn, data)
+
+	data['classes'] = get_class_names(data['classes'])
+	data['boxes'] = np.round(data['boxes'], 3)
+	data['scores'] = np.round(data['scores'], 3)
+	filename = '/img/'+str(id)
+
+	return render_template('index.html', data=data, filename=filename, isData=True)
 	
 @app.route('/stream')
 def stream():
@@ -58,7 +78,10 @@ def stream():
 
 @app.route('/history')
 def get_history():
-	response = requests.get(HOST_NAME + "/release_cam")
+	try:
+		response = requests.get(HOST_NAME + "/release_cam")
+	except:
+		pass
 	conn = sqlite3.connect('database.db')
 	data = get_all_data(conn)
 
@@ -75,8 +98,15 @@ def get_his_data(id):
 
 @app.route('/img/<id>', methods=['GET'])
 def get_img(id):
-	filename = './images/' + str(id) + '.png'
+	filename = './images/' + str(id) + '.jpg'
 	return send_file(filename, mimetype='image/gif')
+
+
+@app.route('/delete/<id>', methods=['GET'])
+def delete(id):
+	conn = sqlite3.connect('database.db')
+	delete_data(conn, id)
+	return redirect('/history')
 
 if __name__ == '__main__':
     app.run(port=8000, debug=True, host='0.0.0.0')

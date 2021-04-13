@@ -2,6 +2,7 @@ import tensorflow as tf
 import cv2
 import numpy as np
 import json
+from json import JSONEncoder
 from utils import *
 import datetime
 
@@ -56,26 +57,39 @@ def predict(interpreter, input_details, output_details, input_array, input_size)
 	except:
 		return None
 
+
+class NumpyArrayEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return JSONEncoder.default(self, obj)
+
 def process_predictions(predictions, image_id):
 	no_det = predictions[3][0]
 	#print(no_det)
-	boxes = np.array2string(predictions[0][0][:no_det], precision=2, separator=',',
-                      suppress_small=True)
-	scores = np.array2string(predictions[1][0][:no_det], precision=2, separator=',',
-                      suppress_small=True)
-	classes = np.array2string(predictions[2][0][:no_det], precision=2, separator=',',
-                      suppress_small=True)
+	# boxes = np.array2string(predictions[0][0][:no_det], precision=2, separator=',',
+    #                   suppress_small=True)
+	# scores = np.array2string(predictions[1][0][:no_det], precision=2, separator=',',
+    #                   suppress_small=True)
+	# classes = np.array2string(predictions[2][0][:no_det], precision=2, separator=',',
+    #                   suppress_small=True)
                       
+	boxes = predictions[0][0][:no_det]
+	scores = predictions[1][0][:no_det]
+	classes = predictions[2][0][:no_det]
+
 	class_names = get_class_names(predictions[2][0][:no_det])
 
-	results = { "image_id": str(image_id),
+	results = { "image_id": image_id,
 				"boxes": boxes,
 				"scores": scores,
-				"classes": class_names,
+				"classes": classes,
 				"no_det": str(no_det)
 				}
-	#results = json.dumps(results)
-	return results
+	
+	encodedData = json.dumps(results, cls=NumpyArrayEncoder)
+
+	return encodedData
 
 def get_class_names(classes):
 	labels = read_class_names('coco.names')

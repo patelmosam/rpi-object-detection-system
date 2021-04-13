@@ -4,15 +4,15 @@ def Init_db():
     conn = sqlite3.connect('database.db')
     print("Opened database successfully")
 
-    conn.execute('CREATE TABLE Detections (image_id TEXT, bbox TEXT, classes TEXT, score TEXT, no_det TEXT)')
+    conn.execute('CREATE TABLE Detections (image_id TEXT, bbox TEXT, classes TEXT, scores TEXT, no_det TEXT)')
     print("Table created successfully")
     conn.close()
 
 
-def insert_data(conn, image_id, bbox, classes, scores, no_det):
+def insert_data(conn, data):
     c = conn.cursor()
 
-    c.execute("INSERT INTO Detections VALUES (\""+ image_id +"\",\""+ bbox +"\",\""+ classes +"\",\""+ scores +"\",\""+ no_det +"\")")
+    c.execute("INSERT INTO Detections(image_id, bbox, classes, scores, no_det) VALUES (?,?,?,?,?)", data)
 
     conn.commit()
 
@@ -36,12 +36,20 @@ def get_data_id(conn, img_id):
 
     return row
 
-if __name__ == '__main__':
-    #Init_db()
-    conn = sqlite3.connect('database.db')
+def delete_data(conn, image_id):
+    c = conn.cursor()
 
-    # insert_data(conn, "0", "[12,23,45,67]", "[1]", "[0.99]", "1")
+    c.execute("DELETE FROM Detections WHERE image_id=?", (image_id,))
+    conn.commit()
+
+
+
+if __name__ == '__main__':
+    Init_db()
+    # conn = sqlite3.connect('database.db')
+
+    #insert_data(conn, (0, [12,23,45,67], [1], [0.99], 1))
 
     # get_all_data(conn)
 
-    get_data_id(conn, "2021-04-07-21-46-22")
+    # get_data_id(conn, "2021-04-07-21-46-22")

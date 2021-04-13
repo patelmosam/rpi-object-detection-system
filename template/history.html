@@ -11,10 +11,11 @@
                 <thead>
                 <tr>
                     <th>Image Id</th>
-                    <th>Class</th>
+                    <th>Classes</th>
                     <th>BBox</th>
-                    <th>Score</th>
+                    <th>Scores</th>
                     <th>Detections</th>
+                    <th>Delete</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -23,10 +24,13 @@
                     <td>
                         <a href="/his_result/{{d[0]}}">{{d[0]}}</a>
                     </td>
-                    <td>{{d[1]}}</td>
                     <td>{{d[2]}}</td>
+                    <td>{{d[1]}}</td>
                     <td>{{d[3]}}</td>
                     <td>{{d[4]}}</td>
+                    <td><a href="/delete/{{d[0]}}">
+                        <button class="btn"><i class="fa fa-trash"></i></button>
+                      </a></td>
                 </tr>
                 {% endfor %}
             </tbody>

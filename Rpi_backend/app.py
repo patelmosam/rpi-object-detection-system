@@ -29,7 +29,7 @@ def capture_img():
 	if camera is not None:
 		camera.release()
 		camera = None
-	camera = cv2.VideoCapture(0)
+	camera = cv2.VideoCapture(2)
 	# results = capture_and_predict(MODEL_SIZE,  MAX_CAP, BLUR_THRESHOLD, interpreter, input_details, output_details)
 
 	image_id = get_image_id()
@@ -37,12 +37,14 @@ def capture_img():
 
 	if img is not None:
 		predictions = predict(interpreter, input_details, output_details, img, MODEL_SIZE[0])
+		# print(predictions)
 		# make_bbox(original_img, predictions, image_id)
 		cv2.imwrite("static/capture_"+str(image_id)+".jpg", original_img)
 		results = process_predictions(predictions, image_id)
-
+	# print(results)
 	if results is not None:
 		return jsonify(results)
+		# return Response(response=results, mimetype='application/json')
 	else:
 		results = { 'error': "500",
 					'msg' : 'Captured the blur Image , Try Again..'
@@ -63,7 +65,7 @@ def video_feed():
 		camera.release()
 		camera = None
 
-	camera = cv2.VideoCapture(0)
+	camera = cv2.VideoCapture(2)
 	return Response(gen_frames(camera), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/release_cam')
