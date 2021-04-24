@@ -15,7 +15,7 @@ camera = None
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
 
-interpreter, input_details, output_details = initilize(MODEL_PATH)
+interpreter, input_details, output_details = backend.initilize(MODEL_PATH)
 
 @app.route('/', methods=['GET'])
 def home():
@@ -31,15 +31,15 @@ def capture_img():
 		camera = None
 	camera = cv2.VideoCapture(0)
 	
-	image_id = get_image_id()
+	image_id = backend.get_image_id()
 	img, original_img = backend.capture_perfect(camera, MODEL_SIZE, MAX_CAP, BLUR_THRESHOLD)
 
 	if img is not None:
-		predictions = predict(interpreter, input_details, output_details, img, MODEL_SIZE[0])
+		predictions = backend.predict(interpreter, input_details, output_details, img, MODEL_SIZE[0])
 	
 		# make_bbox(original_img, predictions, image_id)
 		cv2.imwrite("static/capture_"+str(image_id)+".jpg", original_img)
-		results = process_predictions(predictions, image_id)
+		results = backend.process_predictions(predictions, image_id)
 
 	if results is not None:
 		return jsonify(results)
@@ -63,7 +63,7 @@ def video_feed():
 		camera = None
 
 	camera = cv2.VideoCapture(0)
-	return Response(gen_frames(camera), mimetype='multipart/x-mixed-replace; boundary=frame')
+	return Response(backend.gen_frames(camera), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/release_cam')
 def release_cam():

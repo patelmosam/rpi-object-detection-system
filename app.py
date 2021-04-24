@@ -1,5 +1,6 @@
 from flask import Flask
 from flask import request, jsonify, render_template, redirect, send_file
+import numpy as np
 import requests
 import database as db
 import json
@@ -62,12 +63,12 @@ def capture():
 		db.insert_data(DB_PATH, (id, bbox, classes_name, scores, data['num_det']))
 
 
-	data['classes'] = classes_name
+	data['classes'] = utils.get_class_names(data['classes'])
 	data['boxes'] = np.round(data['boxes'], 3)
 	data['scores'] = np.round(data['scores'], 3)
 	filename = '/img/'+str(id)
 
-	return render_template('capture.html', data=data, filename=filename, isData=True, connection=connection)
+	return render_template('capture.html', data=data, filename=filename, connection=connection)
 	
 @app.route('/stream')
 def stream():
