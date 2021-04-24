@@ -1,6 +1,6 @@
 import flask
 from flask import request, jsonify, render_template, url_for, send_file, Response
-from backend import *
+import backend 
 import datetime
 from utils import prep_image
 import cv2
@@ -19,8 +19,8 @@ interpreter, input_details, output_details = initilize(MODEL_PATH)
 
 @app.route('/', methods=['GET'])
 def home():
-	return '''<h1>Welcome</h1>
-<p>RPI AI camera system has been initilized.</p>'''
+	data = {"statues": "connected"}
+	return Response(data, content_type='application/json')
 
 
 @app.route('/api/capture', methods=['GET'])
@@ -29,19 +29,18 @@ def capture_img():
 	if camera is not None:
 		camera.release()
 		camera = None
-	camera = cv2.VideoCapture(2)
-	# results = capture_and_predict(MODEL_SIZE,  MAX_CAP, BLUR_THRESHOLD, interpreter, input_details, output_details)
-
+	camera = cv2.VideoCapture(0)
+	
 	image_id = get_image_id()
-	img, original_img = capture_perfect(camera, MODEL_SIZE, MAX_CAP, BLUR_THRESHOLD)
+	img, original_img = backend.capture_perfect(camera, MODEL_SIZE, MAX_CAP, BLUR_THRESHOLD)
 
 	if img is not None:
 		predictions = predict(interpreter, input_details, output_details, img, MODEL_SIZE[0])
-		# print(predictions)
+	
 		# make_bbox(original_img, predictions, image_id)
 		cv2.imwrite("static/capture_"+str(image_id)+".jpg", original_img)
 		results = process_predictions(predictions, image_id)
-	# print(results)
+
 	if results is not None:
 		return jsonify(results)
 		# return Response(response=results, mimetype='application/json')
@@ -51,11 +50,9 @@ def capture_img():
 					}
 		return jsonify(results)
 
-@app.route('/api/img/<id>', methods=['GET'])
-def get_img(id):
-	#global image_id
-	#return '<img src=' + url_for('static',filename='capture_'+str(CNT)+'.jpg') + '>'
-	filename = './static/capture_' + str(id) + '.jpg'
+@app.route('/api/img/<img_id>', methods=['GET'])
+def get_img(img_id):
+	filename = './static/capture_' + str(img_id) + '.jpg'
 	return send_file(filename, mimetype='image/gif')
 
 @app.route('/video_feed')
@@ -65,7 +62,7 @@ def video_feed():
 		camera.release()
 		camera = None
 
-	camera = cv2.VideoCapture(2)
+	camera = cv2.VideoCapture(0)
 	return Response(gen_frames(camera), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/release_cam')
@@ -76,6 +73,24 @@ def release_cam():
 		camera = None
 	
 	return "True"
+
+# @app.route('/auto_capture')
+# def auto_capture():
+# 	global camera
+# 	if camera is not None:
+# 		camera.release()
+# 		camera = None
+# 	camera = cv2.VideoCapture(0)
+# 	img, original_img = auto_detect_img(camera, MODEL_SIZE)
+# 	image_id = get_image_id()
+# 	if img is not None:
+# 		predictions = predict(interpreter, input_details, output_details, img, MODEL_SIZE[0])
+# 		cv2.imwrite("static/capture_"+str(image_id)+".jpg", original_img)
+# 		results = process_predictions(predictions, image_id)
+# 		print(results)
+
+# 	if results is not None:
+# 		return jsonify(results)
 
 if __name__ == "__main__":
     app.run(debug=True)

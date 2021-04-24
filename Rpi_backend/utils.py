@@ -26,7 +26,6 @@ def load_image(image_path, model_size):
 def prep_image(img, model_size):
 	# original_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 	
-    # image_data = utils.image_preprocess(np.copy(original_image), [input_size, input_size])
 	image_data = cv2.resize(img, model_size)
 	image_data = image_data / 255.0
 	image_data = np.expand_dims(image_data, axis=0)
