@@ -1,53 +1,46 @@
 {% extends "base.html" %}
 {% block content %}
 
-{% if isData %}
-  <div id="main" class="container-md">
-      <div id="image" class="container-md">
-        <img src={{filename}} class="img-fluid" alt="Responsive image">
-      </div>
 
-      <div id="data" class="container-md">
-        <table class="table table-bordered table-responsive table-success table-striped">
-          <!-- <thead>
-            <tr>
-              <th scope="col">#</th>
-              <th scope="col">First</th>
-              <th scope="col">Last</th>
-              <th scope="col">Handle</th>
-            </tr>
-          </thead> -->
-          <tbody>
-            <tr>
-              <th scope="row">Image ID</th>
-              <td>{{data.image_id}}</td>
-            </tr>
-            <tr>
-              <th scope="row">Detections</th>
-              <td>{{data.no_det}}</td>
-            </tr>
-            <tr>
-              <th scope="row">Classes</th>
-              <td>{{data.classes}}</td>
-            </tr>
-            <tr>
-              <th scope="row">Bounding Box</th>
-              <td>{{data.boxes}}</td>
-            </tr>
-            <tr>
-              <th scope="row">Scores</th>
-              <td colspan="2">{{data.scores}}</td>
-          
-            </tr>
-          </tbody>
-        </table>
-      </div>
+<div id="main" class="container-md">
+  <div id="image" class="container-md">
+    <img src={{filename}} class="img-fluid" alt="Responsive image">
+  </div>
 
-      <div id="button" class="container-md">
-        <a href="/capture">
-          <button class="btn btn-primary">Capture</button>
-        </a>
-      </div>
-    </div>
-{% endif %}
+  <div id="data" class="container-md">
+    <table class="table table-bordered table-responsive-sm table-responsive-md table-success table-striped">
+
+      <tbody>
+        <tr>
+          <th scope="row">Image ID</th>
+          <td>{{data.image_id}}</td>
+        </tr>
+        <tr>
+          <th scope="row">Detections</th>
+          <td>{{data.num_det}}</td>
+        </tr>
+        <tr>
+          <th scope="row">Classes</th>
+          <td>{{data.classes}}</td>
+        </tr>
+        <tr>
+          <th scope="row">Bounding Box</th>
+          <td>{{data.boxes}}</td>
+        </tr>
+        <tr>
+          <th scope="row">Scores</th>
+          <td colspan="2">{{data.scores}}</td>
+
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="button" class="container-md">
+    <a href="/capture">
+      <button class="btn btn-primary">Capture</button>
+    </a>
+  </div>
+</div>
+
 {% endblock %}

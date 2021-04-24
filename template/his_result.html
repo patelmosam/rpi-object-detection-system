@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 {% block content %}
-  
+
 
 <div id="main" class="container-md">
- 
-        <div id="image" class="container-md">
-            <img src={{filename}} class="img-fluid" alt="Responsive image">
-        </div>
 
-        <div id="data" class="container-md">
-            <table class="table table-bordered table-responsive table-success table-striped">
-                <thead>
+    <div id="image" class="container-md">
+        <img src={{filename}} class="img-fluid" alt="Responsive image">
+    </div>
+
+    <div id="data" class="container-md">
+        <table class="table table-bordered table-responsive-sm table-responsive-md table-success table-striped">
+            <thead>
                 <tr>
                     <th>Image Id</th>
                     <th>Class</th>
@@ -18,8 +18,8 @@
                     <th>Score</th>
                     <th>Detections</th>
                 </tr>
-                </thead>
-                <tbody>
+            </thead>
+            <tbody>
                 <tr>
                     <td>{{data[0]}}</td>
                     <td>{{data[1]}}</td>
@@ -27,16 +27,16 @@
                     <td>{{data[3]}}</td>
                     <td>{{data[4]}}</td>
                 </tr>
-            
-            </tbody>
-            </table>
-        </div>
 
-        <div id="button" class="container-md">
-            <a href="/history">
-              <button class="btn btn-primary">Back</button>
-            </a>
-        </div>
+            </tbody>
+        </table>
+    </div>
+
+    <div id="button" class="container-md">
+        <a href="/history">
+            <button class="btn btn-primary">Back</button>
+        </a>
+    </div>
 
 </div>
 

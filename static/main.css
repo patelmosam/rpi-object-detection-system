@@ -3,7 +3,6 @@ body {
 }
 
 .container-md {
-   /* border: 5px black solid; */
    margin-top: 10px;
 }
 
@@ -11,11 +10,7 @@ body {
    align-items: center;
    text-align: center;
 }
-/* 
-#data {
-   margin-top: 10px;
-} */
 
 .table {
-   border: 1px solid rgb(0, 0, 0);
+   border: 10px solid rgb(0, 0, 0);
 }
