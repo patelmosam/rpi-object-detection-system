@@ -35,7 +35,7 @@ def capture_img():
 	img, original_img = backend.capture_perfect(camera, MODEL_SIZE, MAX_CAP, BLUR_THRESHOLD)
 
 	if img is not None:
-		predictions = backend.predict(interpreter, input_details, output_details, img, MODEL_SIZE[0])
+		predictions = backend.predict(interpreter, input_details, output_details, img, input_size)
 	
 		# make_bbox(original_img, predictions, image_id)
 		cv2.imwrite("static/capture_"+str(image_id)+".jpg", original_img)
@@ -71,8 +71,8 @@ def release_cam():
 	if camera is not None:
 		camera.release()
 		camera = None
-	
-	return "True"
+	data = {"release": "True"}
+	return Response(data, content_type='application/json')
 
 # @app.route('/auto_capture')
 # def auto_capture():

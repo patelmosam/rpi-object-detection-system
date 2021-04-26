@@ -16,6 +16,8 @@
   <!-- <link rel="stylesheet" href="../static/sidenav.css"> -->
   <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
 
+  {% block header %} {% endblock %}
+
   <title>RPI System</title>
 </head>
 
@@ -42,6 +44,9 @@
           {% endif %}
           <li class="nav-item">
             <a class="nav-link" href="/history">History</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/settings">Settings</a>
           </li>
         </ul>
         <ul class="navbar-nav ml-auto">
