@@ -168,35 +168,6 @@ def capture_and_predict(MODEL_SIZE, MAX_CAP, BLUR_THRESHOLD, interpreter, input_
 		return results
 	return None
 
-# def detect_motion(camera):
-# 	ret, frame1 = camera.read()
-# 	ret, frame2 = camera.read()
-# 	print(frame1.shape)
-# 	while camera.isOpened():
-# 		diff = cv2.absdiff(frame1, frame2)
-# 		gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
-# 		blur = cv2.GaussianBlur(gray, (5,5), 0)
-# 		_, thresh = cv2.threshold(blur, 20, 255, cv2.THRESH_BINARY)
-# 		# print(thresh.shape)
-# 		dilated = cv2.dilate(thresh, None, iterations=3)
-# 		# print(dilated.shape)
-# 		contours, _ = cv2.findContours(dilated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-# 		print(len(contours))
-# 		for contour in contours:
-# 			if cv2.contourArea(contour) > 900:
-# 				camera.release()
-# 				return frame2
-# 	return None
-
-# def auto_detect_img(camera, MODEL_SIZE):
-# 	frame = None
-# 	while frame is None:
-# 		frame = detect_motion(camera)
-
-# 	input_array = prep_image(frame, MODEL_SIZE)
-# 	input_array = np.float32(input_array)
-	
-# 	return input_array, frame
 
 
 	
