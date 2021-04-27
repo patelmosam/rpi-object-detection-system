@@ -3,16 +3,24 @@
   
 
     <div id="main" class="container-md">
+      {% if is_stream %}
         <h3 class="mt-5">Live Streaming</h3>
             <div id="image" class="container-md">
               <img src={{video_url}} class="img-fluid" alt="Responsive image">
             </div>
 
         <div id="button" class="container-md">
-            <a href="/capture">
+            <a href="/capture/1">
               <button class="btn btn-primary">Capture</button>
             </a>
         </div>
+      {% else %}
+      <div id="button" class="container-md">
+        <a href="/stream/1">
+          <button class="btn btn-primary">Stream</button>
+        </a>
+      </div>
+      {% endif %}
     </div>
 
 {% endblock %}

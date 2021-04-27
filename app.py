@@ -6,97 +6,110 @@ import database as db
 import json
 import utils
 
-config = utils.get_config("app.config")
+CONFIG = utils.get_config("app.config")
 
 app = Flask(__name__, template_folder='template')
-connection = False
+conn = False
 
 @app.route('/', methods=['GET'])
 def home():
-	global connection
+	global conn
 	try:
-		r = requests.get(config["HOST_ADDR"])
+		conn_statues = requests.get(CONFIG["HOST_ADDR"])
 	
-		if r.status_code == 200:
-			connection = True
-			return render_template('home.html', connection=connection)
+		if conn_statues.status_code == 200:
+			conn = True
+			req = requests.post(url=CONFIG['HOST_ADDR']+"/get_config", data=CONFIG)
+			return render_template('home.html', conn=conn)
+		else:
+			conn = False
+			return render_template('home.html', conn=conn)
 	except:
-		connection = False
-		return render_template('home.html', connection=connection)
+		conn = False
+		return render_template('home.html', conn=conn)
 	
-@app.route('/capture', methods=['GET'])
-def capture():
-	global connection
-	response = requests.get(config["HOST_ADDR"] + "/api/capture")
+@app.route('/capture/<tag>', methods=['GET'])
+def capture(tag):
+	global conn
 
-	if response.status_code != 200:
-		connection = False
-		return render_template('capture.html', isData=False, connection=connection)
-	
-	data = response.json()
-	data = json.loads(data)
-	img_id = data['image_id']
+	if tag == "1":
+		response = requests.get(CONFIG["HOST_ADDR"] + "/api/capture")
 
-	predictions = [np.array([data['boxes']]), np.array([data['scores']]), np.array([data['classes']]), np.array([int(data['num_det'])])]
-	
-	img_url = config["HOST_ADDR"] + "/api/img/"+str(img_id)
-	try:
-		r = requests.get(img_url)
+		if response.status_code != 200:
+			conn = False
+			return render_template('capture.html', Data=False, conn=conn)
+
+		data = response.json()
+		data = json.loads(data)
+		img_id = data['image_id']
+
+		predictions = [np.array([data['boxes']]), np.array([data['scores']]), np.array([data['classes']]), np.array([int(data['num_det'])])]
 		
-		file = open('images/'+img_id+'.jpg', 'wb')
-		file.write(r.content)
-		file.close()
-	except:
-		pass
+		img_url = CONFIG["HOST_ADDR"] + "/api/img/"+str(img_id)
+		try:
+			r = requests.get(img_url)
+			
+			file = open('images/'+img_id+'.jpg', 'wb')
+			file.write(r.content)
+			file.close()
+		except:
+			pass
 
-	if data['num_det'] != "0":
-		utils.make_bbox(predictions, img_id)
-		bbox, classes, scores = utils.convert_data(data)
-		classes_name = utils.get_class_names(data['classes'])
+		if data['num_det'] != "0":
+			utils.make_bbox(predictions, img_id)
+			bbox, classes, scores = utils.convert_data(data)
+			classes_name = utils.get_class_names(data['classes'])
 
-		db.insert_data(config["DB_PATH"], (img_id, bbox, classes_name, scores, data['num_det']))
+			db.insert_data(CONFIG["DB_PATH"], (img_id, bbox, classes_name, scores, data['num_det']))
 
 
-	data['classes'] = utils.get_class_names(data['classes'])
-	data['boxes'] = np.round(data['boxes'], 3)
-	data['scores'] = np.round(data['scores'], 3)
-	filename = '/img/'+str(img_id)
+		data['classes'] = utils.get_class_names(data['classes'])
+		data['boxes'] = np.round(data['boxes'], 3)
+		data['scores'] = np.round(data['scores'], 3)
+		filename = '/img/'+str(img_id)
 
-	return render_template('capture.html', data=data, filename=filename, connection=connection)
+		return render_template('capture.html', is_capture=True, data=data, filename=filename, conn=conn)
 	
-@app.route('/stream')
-def stream():
+	else:
+		return render_template('capture.html', is_capture=False, conn=conn)
+	
+@app.route('/stream/<tag>')
+def stream(tag):
 	"""Video streaming home page."""
-	global connection
-	video_url = config["HOST_ADDR"] + "/video_feed"
-	return render_template('stream.html', video_url=video_url, connection=connection)
+	global conn
+
+	if tag == "1":
+		video_url = CONFIG["HOST_ADDR"] + "/video_feed"
+		return render_template('stream.html', is_stream=True, video_url=video_url, conn=conn)
+	else: 
+		return render_template('stream.html', is_stream=False, conn=conn)
 
 @app.route('/history')
 def get_history():
-	global connection
+	global conn
 	try:
-		conn_statues = requests.get(config["HOST_ADDR"] + "/") 
+		conn_statues = requests.get(CONFIG["HOST_ADDR"] + "/") 
 		if conn_statues.status_code == 200:
-			connection = True
+			conn = True
 	except:
-		connection = False
+		conn = False
 	try:
-		response = requests.get(config["HOST_ADDR"] + "/release_cam")
+		response = requests.get(CONFIG["HOST_ADDR"] + "/release_cam")
 	except:
 		pass
 
-	data = db.get_all_data(config["DB_PATH"])
-	return render_template('history.html', data=data, connection=connection)
+	data = db.get_all_data(CONFIG["DB_PATH"])
+	return render_template('history.html', data=data, conn=conn)
 
 @app.route('/his_result/<img_id>')
 def get_his_data(img_id):
-	global connection
+	global conn
 	
-	data = db.get_data_id(config["DB_PATH"], img_id)
+	data = db.get_data_id(CONFIG["DB_PATH"], img_id)
 
-	filename = config['SELF_ADDR']+"/img/"+str(img_id)
+	filename = CONFIG['SELF_ADDR']+"/img/"+str(img_id)
 
-	return render_template('his_result.html', data=data[0], filename=filename, connection=connection)
+	return render_template('his_result.html', data=data[0], filename=filename, conn=conn)
 
 @app.route('/img/<img_id>', methods=['GET'])
 def get_img(img_id):
@@ -107,23 +120,34 @@ def get_img(img_id):
 @app.route('/delete/<img_id>', methods=['GET'])
 def delete(img_id):
 	
-	db.delete_data(config["DB_PATH"], img_id)
+	db.delete_data(CONFIG["DB_PATH"], img_id)
 	return redirect('/history')
 
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
-	global connection
+	global conn
+
+	try:
+		response = requests.get(CONFIG["HOST_ADDR"] + "/release_cam")
+	except:
+		pass
 
 	if request.method == 'POST':
-		host_add = request.form.get('host_add')
-		db_path = request.form.get('db_path')
-		
-		config['HOST_ADDR'] = host_add
-		config['DB_PATH'] = db_path
-		utils.set_config("app.config", config)
+		CONFIG['HOST_ADDR'] = request.form.get('host_add')
+		CONFIG['DB_PATH'] = request.form.get('db_path')
+		CONFIG['MAX_CAP'] = request.form.get('max_cap')
+		CONFIG['BLUR_THRESHOLD'] = request.form.get('blur_th')
+
+		r = requests.post(url=CONFIG['HOST_ADDR']+"/get_config", data=CONFIG)
+
+		utils.set_config("app.config", CONFIG)
 		return redirect('/settings')
 	else:
-		return render_template('settings.html', data=config, connection=connection)
+		return render_template('settings.html', data=CONFIG, conn=conn)
+
+@app.route('/config', methods=['GET'])
+def send_config():
+	return jsonify(CONFIG)
 
 if __name__ == '__main__':
     app.run(port=8000, debug=True, host='0.0.0.0')

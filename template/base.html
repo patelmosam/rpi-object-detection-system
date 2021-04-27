@@ -34,12 +34,12 @@
           <li class="nav-item">
             <a class="nav-link active" aria-current="page" href="/">Home</a>
           </li>
-          {% if connection %}
+          {% if conn %}
           <li class="nav-item">
-            <a class="nav-link" href="/capture">Capture</a>
+            <a class="nav-link" href="/capture/0">Capture</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="/stream">Stream</a>
+            <a class="nav-link" href="/stream/0">Stream</a>
           </li>
           {% endif %}
           <li class="nav-item">
@@ -50,17 +50,18 @@
           </li>
         </ul>
         <ul class="navbar-nav ml-auto">
-          {% if connection %}
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
-                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          {% if conn %}
+          <li class="nav-item">
+            <!-- <a class="nav-link dropdown-toggle" href="" id="navbarDropdown" role="button"
+                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> -->
+              <a class="nav-link" href="" role="button">
                 <button type="button" class="btn btn-success mx-1">
                 Connected
-            </button>
+              </button>
             </a>
-            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <!-- <div class="dropdown-menu" aria-labelledby="navbarDropdown">
                 <a class="dropdown-item" href="/">Disconnect</a>
-            </div>
+            </div> -->
           </li>
           {% else %}
           <li class="nav-item">

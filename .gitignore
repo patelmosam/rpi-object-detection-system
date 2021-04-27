@@ -5,3 +5,4 @@
 *.tflite
 *.db
 /test
+.vscode
