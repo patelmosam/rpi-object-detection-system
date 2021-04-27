@@ -98,6 +98,23 @@ def get_config():
 		CONFIG = request.form.to_dict()
 		return "True"
 
+@app.route('/auto_capture')
+def auto_capture():
+	global camera
+	if camera is not None:
+		camera.release()
+		camera = None
+	camera = cv2.VideoCapture(0)
+	img, original_img = backend.auto_detect_img(camera, MODEL_SIZE)
+	image_id = backend.get_image_id()
+	if img is not None:
+		predictions = backend.predict(interpreter, input_details, output_details, img, MODEL_SIZE[0])
+		cv2.imwrite("static/capture_"+str(image_id)+".jpg", original_img)
+		results = backend.process_predictions(predictions, image_id)
+		print(results)
+
+	if results is not None:
+		return jsonify(results)
 
 if __name__ == "__main__":
     app.run(debug=True)
