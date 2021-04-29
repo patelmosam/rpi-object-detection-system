@@ -6,11 +6,7 @@ import time
 import json
 import colorsys
 import random
-# from object_detection.utils import label_map_util
-# from object_detection.utils import visualization_utils as viz_utils
-# import matplotlib
-# matplotlib.use('TkAgg')
-# import matplotlib.pyplot as plt
+import datetime
 
 def load_image(image_path, model_size):
     original_image = cv2.imread(image_path)
@@ -52,7 +48,7 @@ def filter_boxes(box_xywh, scores, score_threshold=0.4, input_shape = tf.constan
     pred_conf = tf.boolean_mask(scores, mask)
     class_boxes = tf.reshape(class_boxes, [tf.shape(scores)[0], -1, tf.shape(class_boxes)[-1]])
     pred_conf = tf.reshape(pred_conf, [tf.shape(scores)[0], -1, tf.shape(pred_conf)[-1]])
-    # print(class_boxes)
+
     box_xy, box_wh = tf.split(class_boxes, (2, 2), axis=-1)
 
     input_shape = tf.cast(input_shape, dtype=tf.float32)
@@ -84,7 +80,7 @@ def draw_bbox(image, bboxes, classes, show_label=True):
     random.seed(None)
 
     out_boxes, out_scores, out_classes, num_boxes = bboxes
-    # print(out_boxes, out_scores, out_classes, num_boxes)
+ 
     for i in range(num_boxes[0]):
         if int(out_classes[0][i]) < 0 or int(out_classes[0][i]) > num_classes: continue
         coor = out_boxes[0][i]
@@ -120,14 +116,15 @@ def process_bbox(boxes, width, hight):
         box[3] = int(box[3]*width)
     return boxes 
     
+def get_date_info():
+    today = datetime.date.today()
+    day = today.day
+    month = today.month
+    year = today.year
+    _, week, week_day = datetime.date(year, month, day).isocalendar()
 
-if __name__ == "__main__":
-    boxes = np.array([[[0.11747709, 0.23846571, 1., 0.90909386]]])
-    scores = np.array([[0.27496317]])
-    classes = np.array([[0.]])
-    no_det = np.array([1])
-    predictions = [boxes, scores, classes, no_det]
-    img = cv2.imread('./static/capture__2021-04-05-10-51-37.jpg')
-    labels = read_class_names('coco.names')
-    new_img = draw_bbox(img, predictions, labels)
-    cv2.imwrite("new_img.jpg", new_img)
+    day_format = str(day)+'-'+str(month)+'-'+str(year)
+    month_fromat = str(month)+'-'+str(year)
+    week_format = str(week)+'-'+str(week_day)+'-'+str(year)
+
+    return day_format, month_fromat, week_format

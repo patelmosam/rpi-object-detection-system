@@ -1,0 +1,162 @@
+{% extends "base.html" %} 
+{% block header %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='settings.css') }}"
+/>
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='tab.css') }}"
+/>
+{% endblock %} 
+
+{% block content %}
+
+<div class="container light-style flex-grow-1 container-p-y">
+ 
+    <h4 class="font-weight-bold py-3 mb-4">Settings</h4>
+
+    <div class="card overflow-hidden">
+      <div class="row no-gutters row-bordered row-border-light">
+        <div class="col-md-3 pt-0">
+          <div class="list-group list-group-flush account-settings-links">
+            <a
+              class="list-group-item list-group-item-action active"
+              data-toggle="list"
+              href="#space-stats"
+              >Space Stats</a
+            >
+            <a
+              class="list-group-item list-group-item-action"
+              data-toggle="list"
+              href="#cleanupspace"
+              >Cleanup Space</a
+            >
+          </div>
+        </div>
+        <div class="col-md-9">
+          <div class="tab-content">
+            <div class="tab-pane fade active show" id="space-stats">
+              <hr class="border-light m-0" />
+
+              <div class="card-body">
+                <div class="form-group">
+                  <label class="form-label">Totel Space</label>
+                  <label class="form-control mb-1"> {{data.space_stat.totel_space}} </label>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Used Space</label>
+                  <label class="form-control mb-1"> {{data.space_stat.used_space}} </label>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Free Space</label>
+                    <label class="form-control mb-1"> {{data.space_stat.free_space}} </label>
+                </div>
+                
+                
+              </div>
+            </div>
+
+            <div class="tab-pane fade" id="cleanupspace">
+              <div class="card-body pb-2">
+                <h6 class="font-weight-bold py-3 mb-4">Clean space by day/week/month</h6>
+                <div class="tab">
+                    <button class="tablinks" onclick="openCity(event, 'Day')">Day</button>
+                    <button class="tablinks" onclick="openCity(event, 'Month')">Month</button>
+                    <button class="tablinks" onclick="openCity(event, 'Week')">Week</button>
+                </div>
+                <div id="Day" class="tabcontent">
+                    <div id="data" class="container-md"></div>
+                        <table class="table table-bordered table-responsive-sm table-responsive-md table-success table-striped">
+                            <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Num Images</th>
+                                <th>Used Space</th>
+                                <th>Delete</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for d in data.daily_data %}
+                            <tr>
+                                <td>{{d}}</td>
+                                <td>{{data.daily_data[d].num_images}}</td>
+                                <td>{{data.daily_data[d].total_space}}</td>
+                                <td><a href="/delete_imgs/day_{{d}}">
+                                    <button class="btn"><i class="fa fa-trash"></i></button>
+                                </a></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        </table>
+                  </div>
+                <div id="Month" class="tabcontent">
+                        <div id="data" class="container-md"></div>
+                            <table class="table table-bordered table-responsive-sm table-responsive-md table-success table-striped">
+                                <thead>
+                                <tr>
+                                    <th>Month</th>
+                                    <th>Num Images</th>
+                                    <th>Used Space</th>
+                                    <th>Delete</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for d in data.monthly_data %}
+                                <tr>
+                                    <td>{{d}}</td>
+                                    <td>{{data.monthly_data[d].num_images}}</td>
+                                    <td>{{data.monthly_data[d].total_space}}</td>
+                                    <td><a href="/delete_imgs/month_{{d}}">
+                                        <button class="btn"><i class="fa fa-trash"></i></button>
+                                    </a></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            </table>
+                  </div>
+                <div id="Week" class="tabcontent">
+                            <div id="data" class="container-md"></div>
+                                <table class="table table-bordered table-responsive-sm table-responsive-md table-success table-striped">
+                                    <thead>
+                                    <tr>
+                                        <th>Week</th>
+                                        <th>Num Images</th>
+                                        <th>Used Space</th>
+                                        <th>Delete</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for d in data.weekly_data %}
+                                    <tr>
+                                        <td>{{d}}</td>
+                                        <td>{{data.weekly_data[d].num_images}}</td>
+                                        <td>{{data.weekly_data[d].total_space}}</td>
+                                        <td><a href="/delete_imgs/week_{{d}}">
+                                            <button class="btn"><i class="fa fa-trash"></i></button>
+                                        </a></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                </table>
+                  </div>
+
+                  <!-- <h4 class="font-weight-bold ">OR</h4>
+                  <h6 class="font-weight-bold py-3 mb-4">Clean space by items</h6> -->
+
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+</div>
+
+
+{% endblock %}
+
+{% block javaScript %}
+<script src="{{url_for('static', filename='tab.js')}}"></script>
+{% endblock %}
