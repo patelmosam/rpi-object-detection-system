@@ -92,7 +92,7 @@ def draw_bbox(image, bboxes, classes, show_label=True):
         coor[2] = int(coor[2] * image_h)
         coor[1] = int(coor[1] * image_w)
         coor[3] = int(coor[3] * image_w)
-        print(coor)
+        # print(coor)
         fontScale = 0.5
         score = out_scores[0][i]
         class_ind = int(out_classes[0][i])
@@ -120,14 +120,11 @@ def process_bbox(boxes, width, hight):
         box[3] = int(box[3]*width)
     return boxes 
     
+def get_config(config_file):
+    with open(config_file) as cfg:
+        data = json.load(cfg)
+    return data
 
-if __name__ == "__main__":
-    boxes = np.array([[[0.11747709, 0.23846571, 1., 0.90909386]]])
-    scores = np.array([[0.27496317]])
-    classes = np.array([[0.]])
-    no_det = np.array([1])
-    predictions = [boxes, scores, classes, no_det]
-    img = cv2.imread('./static/capture__2021-04-05-10-51-37.jpg')
-    labels = read_class_names('coco.names')
-    new_img = draw_bbox(img, predictions, labels)
-    cv2.imwrite("new_img.jpg", new_img)
+def set_config(config_file, data):
+    with open(config_file, 'w') as cfg:
+        json.dump(data, cfg, indent="")

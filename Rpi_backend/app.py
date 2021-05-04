@@ -2,9 +2,10 @@ import flask
 from flask import request, jsonify, render_template, url_for, send_file, Response
 import backend 
 import datetime
-from utils import prep_image
+import utils
 import cv2
 import requests
+from threading import Thread
 
 MODEL_PATH = './weights/yolov4-416-tiny.tflite'
 input_size = 416
@@ -69,7 +70,8 @@ def capture_img():
 
 @app.route('/api/img/<img_id>', methods=['GET'])
 def get_img(img_id):
-	filename = './static/capture_' + str(img_id) + '.jpg'
+	print(img_id)
+	filename = './static/' + str(img_id) + '.jpg'
 	return send_file(filename, mimetype='image/gif')
 
 @app.route('/video_feed')
@@ -98,23 +100,23 @@ def get_config():
 		CONFIG = request.form.to_dict()
 		return "True"
 
-@app.route('/auto_capture')
-def auto_capture():
+@app.route('/auto_capture/<tag>', methods=['GET'])
+def auto_capture(tag):
 	global camera
 	if camera is not None:
 		camera.release()
 		camera = None
-	camera = cv2.VideoCapture(0)
-	img, original_img = backend.auto_detect_img(camera, MODEL_SIZE)
-	image_id = backend.get_image_id()
-	if img is not None:
-		predictions = backend.predict(interpreter, input_details, output_details, img, MODEL_SIZE[0])
-		cv2.imwrite("static/capture_"+str(image_id)+".jpg", original_img)
-		results = backend.process_predictions(predictions, image_id)
-		print(results)
+	if tag == "1":
+		config = {"AutoDetect" : "ON"}
+		utils.set_config('app.config', config)
+		t1 = Thread(target=backend.auto_detect_img, args=[MODEL_SIZE, interpreter, input_details, output_details])
+		t1.start()
+	elif tag == "0":
+		config = {"AutoDetect" : "OFF"}
+		utils.set_config('app.config', config)
+	
+	return "OK"
 
-	if results is not None:
-		return jsonify(results)
 
 if __name__ == "__main__":
     app.run(debug=True)

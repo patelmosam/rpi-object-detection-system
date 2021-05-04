@@ -5,6 +5,8 @@ import requests
 import database as db
 import json
 import utils
+import pickle
+from PIL import Image
 
 CONFIG = utils.get_config("app.config")
 
@@ -60,7 +62,7 @@ def capture(tag):
 			bbox, classes, scores = utils.convert_data(data)
 			classes_name = utils.get_class_names(data['classes'])
 
-			db.insert_data(CONFIG["DB_PATH"], (img_id, bbox, classes_name, scores, data['num_det']))
+			db.insert_data(CONFIG["DB_PATH"], 'Detections', (img_id, bbox, classes_name, scores, data['num_det']))
 
 
 		data['classes'] = utils.get_class_names(data['classes'])
@@ -98,14 +100,14 @@ def get_history():
 	except:
 		pass
 
-	data = db.get_all_data(CONFIG["DB_PATH"])
+	data = db.get_all_data(CONFIG["DB_PATH"], 'Detections')
 	return render_template('history.html', data=data, conn=conn)
 
 @app.route('/his_result/<img_id>')
 def get_his_data(img_id):
 	global conn
 	
-	data = db.get_data_id(CONFIG["DB_PATH"], img_id)
+	data = db.get_data_id(CONFIG["DB_PATH"], 'Detections', img_id)
 
 	filename = CONFIG['SELF_ADDR']+"/img/"+str(img_id)
 
@@ -120,7 +122,7 @@ def get_img(img_id):
 @app.route('/delete/<img_id>', methods=['GET'])
 def delete(img_id):
 	
-	db.delete_data(CONFIG["DB_PATH"], img_id)
+	db.delete_data(CONFIG["DB_PATH"], 'Detections', img_id)
 	return redirect('/history')
 
 @app.route('/settings', methods=['GET', 'POST'])
@@ -148,6 +150,32 @@ def settings():
 @app.route('/config', methods=['GET'])
 def send_config():
 	return jsonify(CONFIG)
+
+@app.route('/auto_cap/<tag>', methods=['GET'])
+def auto(tag):
+	
+	if tag == "on":
+		res = requests.get(CONFIG['HOST_ADDR']+'/auto_capture/1')
+	elif tag == 'off':
+		res = requests.get(CONFIG['HOST_ADDR']+'/auto_capture/0')
+	
+	return render_template('auto_cap.html', conn=conn)
+
+@app.route('/get_auto', methods=['POST'])
+def get_auto():
+	results = request.form.get('data')
+	file = request.files['image']
+	
+	results = json.loads(results)
+	print(results)
+	bbox, classes, scores = utils.convert_data(results)
+	data = (results['image_id'], bbox, classes, scores, results['num_det'])
+	db.insert_data(CONFIG['DB_PATH'], 'auto_data', data)
+	file.save('images/auto_'+results['image_id']+'.jpg')
+	print('done')
+		
+	return "ok"
+
 
 if __name__ == '__main__':
     app.run(port=8000, debug=True, host='0.0.0.0')
