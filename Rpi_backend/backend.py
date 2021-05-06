@@ -171,27 +171,20 @@ def capture_and_predict(MODEL_SIZE, MAX_CAP, BLUR_THRESHOLD, interpreter, input_
 		return results
 	return None
 
-def detect_motion(camera):
-	ret, frame1 = camera.read()
-	# key = cv2.waitKey(1000)
-	time.sleep(1)
-	ret, frame2 = camera.read()
-	# while camera.isOpened():
+def detect_motion(frame1, frame2):
 	diff = cv2.absdiff(frame1, frame2)
 	gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
 	blur = cv2.GaussianBlur(gray, (5,5), 0)
 	_, thresh = cv2.threshold(blur, 20, 255, cv2.THRESH_BINARY)
-	# print(thresh.shape)
+	
 	dilated = cv2.dilate(thresh, None, iterations=3)
-	# print(dilated.shape)
+	
 	contours, _ = cv2.findContours(dilated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-	# print(len(contours))
+	
 	for contour in contours:
 		if cv2.contourArea(contour) > 900:
-			# camera.release()
 			return frame2
-	# frame1 = frame2
-	# ret, frame2 = camera.read()
+
 	return None
 
 def auto_detect_img(MODEL_SIZE, interpreter, input_details, output_details):
@@ -199,8 +192,12 @@ def auto_detect_img(MODEL_SIZE, interpreter, input_details, output_details):
 	camera = cv2.VideoCapture(0)
 	config = get_config('app.config')
 	status = config['AutoDetect']
-	while status == 'ON':
-		frame = detect_motion(camera)
+
+	ret, frame1 = camera.read()
+	ret, frame2 = camera.read()
+
+	while status == 'ON' and camera.isOpened():
+		frame = detect_motion(frame1, frame2)
 
 		if frame is not None:
 			input_array = prep_image(frame, MODEL_SIZE)
@@ -210,16 +207,19 @@ def auto_detect_img(MODEL_SIZE, interpreter, input_details, output_details):
 			predictions = predict(interpreter, input_details, output_details, input_array, MODEL_SIZE[0])
 			cv2.imwrite("static/auto.jpg", frame)
 
-			results = process_predictions(predictions, image_id)
+			if predictions[3][0] > 0:
+				results = process_predictions(predictions, image_id)
 			
-			img = open('static/auto.jpg', 'rb')
+				img = open('static/auto.jpg', 'rb')
 			
-			data = {'data':results}
-			img = {'image': img}
-			r = requests.post(url="http://127.0.0.1:8000/get_auto", files=img, data=data)
-			print(r.status_code)
-			config = get_config('app.config')
-			status = config['AutoDetect']
+				data = {'data':results}
+				img = {'image': img}
+				r = requests.post(url="http://127.0.0.1:8000/get_auto", files=img, data=data)
+				print(r.status_code)
+		config = get_config('app.config')
+		status = config['AutoDetect']
+		frame1 = frame2
+		ret, frame2 = camera.read()
 			
 	camera.release()
 	return None

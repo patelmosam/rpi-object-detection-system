@@ -166,12 +166,16 @@ def get_auto():
 	results = request.form.get('data')
 	file = request.files['image']
 	
-	results = json.loads(results)
-	print(results)
-	bbox, classes, scores = utils.convert_data(results)
-	data = (results['image_id'], bbox, classes, scores, results['num_det'])
+	data = json.loads(results)
+	print(data)
+	file.save('images/auto_'+data['image_id']+'.jpg')
+	predictions = [np.array([data['boxes']]), np.array([data['scores']]), np.array([data['classes']]), np.array([int(data['num_det'])])]
+	utils.make_bbox(predictions, "auto_"+data['image_id'])
+	
+	bbox, classes, scores = utils.convert_data(data)
+	data = (data['image_id'], bbox, classes, scores, data['num_det'])
 	db.insert_data(CONFIG['DB_PATH'], 'auto_data', data)
-	file.save('images/auto_'+results['image_id']+'.jpg')
+	
 	print('done')
 		
 	return "ok"
