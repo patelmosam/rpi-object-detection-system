@@ -88,7 +88,7 @@ def draw_bbox(image, bboxes, classes, show_label=True):
         coor[2] = int(coor[2] * image_h)
         coor[1] = int(coor[1] * image_w)
         coor[3] = int(coor[3] * image_w)
-        print(coor)
+        # print(coor)
         fontScale = 0.5
         score = out_scores[0][i]
         class_ind = int(out_classes[0][i])
@@ -116,6 +116,15 @@ def process_bbox(boxes, width, hight):
         box[3] = int(box[3]*width)
     return boxes 
     
+def get_config(config_file):
+    with open(config_file) as cfg:
+        data = json.load(cfg)
+    return data
+
+def set_config(config_file, data):
+    with open(config_file, 'w') as cfg:
+        json.dump(data, cfg, indent="")
+
 def get_date_info():
     today = datetime.date.today()
     day = today.day

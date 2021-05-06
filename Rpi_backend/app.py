@@ -2,9 +2,10 @@ import flask
 from flask import request, jsonify, render_template, url_for, send_file, Response
 import backend 
 import datetime
-from utils import prep_image
+import utils
 import cv2
 import requests
+from threading import Thread
 import database
 import os
 
@@ -103,6 +104,24 @@ def get_config():
 		CONFIG = request.form.to_dict()
 		return "True"
 
+
+@app.route('/auto_capture/<tag>', methods=['GET'])
+def auto_capture(tag):
+	global camera
+	if camera is not None:
+		camera.release()
+		camera = None
+	if tag == "1":
+		config = {"AutoDetect" : "ON"}
+		utils.set_config('app.config', config)
+		t1 = Thread(target=backend.auto_detect_img, args=[MODEL_SIZE, interpreter, input_details, output_details])
+		t1.start()
+	elif tag == "0":
+		config = {"AutoDetect" : "OFF"}
+		utils.set_config('app.config', config)
+	
+	return "OK"
+
 @app.route('/get_data', methods=['GET'])
 def get_data():
 	space_stat = backend.get_space_info('./static')
@@ -154,6 +173,7 @@ def delete_last(tag):
 
 	data = {"clean": "True"}	
 	return Response(data, content_type='application/json')
+
 
 
 if __name__ == "__main__":

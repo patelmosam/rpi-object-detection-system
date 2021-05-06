@@ -5,6 +5,8 @@ import json
 from json import JSONEncoder
 from utils import *
 import datetime
+import requests
+import time
 import os
 import shutil
 
@@ -155,6 +157,59 @@ def capture_and_predict(MODEL_SIZE, MAX_CAP, BLUR_THRESHOLD, interpreter, input_
 		cv2.imwrite("static/capture_"+str(image_id)+".jpg", original_img)
 		results = process_predictions(predictions, image_id)
 		return results
+	return None
+
+def detect_motion(frame1, frame2):
+	diff = cv2.absdiff(frame1, frame2)
+	gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
+	blur = cv2.GaussianBlur(gray, (5,5), 0)
+	_, thresh = cv2.threshold(blur, 20, 255, cv2.THRESH_BINARY)
+	
+	dilated = cv2.dilate(thresh, None, iterations=3)
+	
+	contours, _ = cv2.findContours(dilated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+	
+	for contour in contours:
+		if cv2.contourArea(contour) > 900:
+			return frame2
+
+	return None
+
+def auto_detect_img(MODEL_SIZE, interpreter, input_details, output_details):
+	frame = None
+	camera = cv2.VideoCapture(0)
+	config = get_config('app.config')
+	status = config['AutoDetect']
+
+	ret, frame1 = camera.read()
+	ret, frame2 = camera.read()
+
+	while status == 'ON' and camera.isOpened():
+		frame = detect_motion(frame1, frame2)
+
+		if frame is not None:
+			input_array = prep_image(frame, MODEL_SIZE)
+			input_array = np.float32(input_array)
+			image_id = get_image_id()
+		
+			predictions = predict(interpreter, input_details, output_details, input_array, MODEL_SIZE[0])
+			cv2.imwrite("static/auto.jpg", frame)
+
+			if predictions[3][0] > 0:
+				results = process_predictions(predictions, image_id)
+			
+				img = open('static/auto.jpg', 'rb')
+			
+				data = {'data':results}
+				img = {'image': img}
+				r = requests.post(url="http://127.0.0.1:8000/get_auto", files=img, data=data)
+				print(r.status_code)
+		config = get_config('app.config')
+		status = config['AutoDetect']
+		frame1 = frame2
+		ret, frame2 = camera.read()
+			
+	camera.release()
 	return None
 
 def get_delete_imglist(image_dir, value, type_):
