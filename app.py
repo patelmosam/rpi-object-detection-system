@@ -151,6 +151,7 @@ def settings():
 def send_config():
 	return jsonify(CONFIG)
 
+
 @app.route('/auto_cap/<tag>', methods=['GET'])
 def auto(tag):
 	
@@ -179,6 +180,20 @@ def get_auto():
 	print('done')
 		
 	return "ok"
+
+@app.route('/manage_rpi', methods=['GET'])
+def manage_rpi():
+	global conn
+
+	space_data = requests.get(CONFIG['HOST_ADDR']+'/get_data')
+
+	return render_template('manage_rpi.html', conn=conn, data=space_data.json())
+
+@app.route('/delete_imgs/<tag>', methods=['GET'])
+def delete_imgs(tag):
+	req = requests.get(CONFIG['HOST_ADDR']+'/clean_space/'+tag)
+
+	return redirect('/manage_rpi')
 
 
 if __name__ == '__main__':

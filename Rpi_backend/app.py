@@ -6,6 +6,8 @@ import utils
 import cv2
 import requests
 from threading import Thread
+import database
+import os
 
 MODEL_PATH = './weights/yolov4-416-tiny.tflite'
 input_size = 416
@@ -56,8 +58,11 @@ def capture_img():
 		predictions = backend.predict(interpreter, input_details, output_details, img, input_size)
 	
 		# make_bbox(original_img, predictions, image_id)
-		cv2.imwrite("static/capture_"+str(image_id)+".jpg", original_img)
+		cv2.imwrite("static/"+str(image_id)+".jpg", original_img)
 		results = backend.process_predictions(predictions, image_id)
+
+		img_size = os.path.getsize('static/'+str(image_id)+'.jpg')
+		database.insert_data('database.db', img_size)
 
 	if results is not None:
 		return jsonify(results)
@@ -70,7 +75,6 @@ def capture_img():
 
 @app.route('/api/img/<img_id>', methods=['GET'])
 def get_img(img_id):
-	print(img_id)
 	filename = './static/' + str(img_id) + '.jpg'
 	return send_file(filename, mimetype='image/gif')
 
@@ -100,6 +104,7 @@ def get_config():
 		CONFIG = request.form.to_dict()
 		return "True"
 
+
 @app.route('/auto_capture/<tag>', methods=['GET'])
 def auto_capture(tag):
 	global camera
@@ -116,6 +121,59 @@ def auto_capture(tag):
 		utils.set_config('app.config', config)
 	
 	return "OK"
+
+@app.route('/get_data', methods=['GET'])
+def get_data():
+	space_stat = backend.get_space_info('./static')
+	 
+	daily_data = database.get_all_data('database.db', 'Daily')
+	monthly_data = database.get_all_data('database.db', 'Monthly')
+	weekly_data = database.get_all_data('database.db', 'Weekly')
+
+	daily_dict = backend.convert_to_dict(daily_data)
+	monthly_dict = backend.convert_to_dict(monthly_data)
+	weekly_dict = backend.convert_to_dict(weekly_data)
+
+	result_dict = {
+		'space_stat': {
+			'totel_space': space_stat[0],
+			'used_space': space_stat[1],
+			'free_space': space_stat[2]
+			},
+		'daily_data': daily_dict,
+		'monthly_data': monthly_dict,
+		'weekly_data': weekly_dict
+	}
+	return jsonify(result_dict)
+
+@app.route('/clean_space/<tag>', methods=['GET'])
+def clean_space(tag):
+	type_, value = tag.split('_') 
+	print(type_, value)
+	delete_list = backend.get_delete_imglist('./static/', value, type_)
+	backend.delete_imgs('./static/', delete_list)
+
+	# backend.update_database(delete_list)
+	if type_ == 'day':
+		database.delete_data('database.db', 'Daily', 'Day', value)
+	elif type_ == 'month':
+		database.delete_data('database.db', 'Monthly', 'Month', value)
+	elif type_ == 'week':
+		database.delete_data('database.db', 'Weekly', 'Week', value)
+
+	data = {"clean": "True"}	
+	return Response(data, content_type='application/json')
+
+@app.route('/delete_last_imgs/<tag>', methods=['GET'])
+def delete_last(tag):
+	img_list = os.listdir('./static/')
+	img_list.sort()
+	backend.delete_imgs('./static/', img_list)
+
+
+	data = {"clean": "True"}	
+	return Response(data, content_type='application/json')
+
 
 
 if __name__ == "__main__":

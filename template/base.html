@@ -48,9 +48,13 @@
           <li class="nav-item">
             <a class="nav-link" href="/settings">Settings</a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/manage_rpi">Manage RPI</a>
+          </li>
         </ul>
         <ul class="navbar-nav ml-auto">
           {% if conn %}
+
           <li class="nav-item">
             <!-- <a class="nav-link dropdown-toggle" href="" id="navbarDropdown" role="button"
                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> -->
@@ -93,6 +97,7 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
       integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV"
       crossorigin="anonymous"></script>
+    {% block javaScript %} {% endblock %}
 </body>
 
 </html>

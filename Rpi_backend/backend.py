@@ -6,8 +6,9 @@ from json import JSONEncoder
 from utils import *
 import datetime
 import requests
-import pickle
 import time
+import os
+import shutil
 
 def initilize(model_path):
 
@@ -69,13 +70,6 @@ class NumpyArrayEncoder(JSONEncoder):
 
 def process_predictions(predictions, image_id):
 	num_det = predictions[3][0]
-	#print(no_det)
-	# boxes = np.array2string(predictions[0][0][:no_det], precision=2, separator=',',
-    #                   suppress_small=True)
-	# scores = np.array2string(predictions[1][0][:no_det], precision=2, separator=',',
-    #                   suppress_small=True)
-	# classes = np.array2string(predictions[2][0][:no_det], precision=2, separator=',',
-    #                   suppress_small=True)
  
 	  # TODO check .tolist()             
 	boxes = predictions[0][0][:num_det]
@@ -134,18 +128,14 @@ def get_image_id():
 	cdate = datetime.date.today()
 	now = datetime.datetime.now()
 	ctime = now.strftime("%H-%M-%S")
-	# print(type(ctime), type(cdate))
-	image_id = str(cdate)+"-"+ctime
+	image_id = str(cdate)+"("+ctime+")"
 	return image_id
 
 def gen_frames(camera): 
-
-	# print(camera.isOpened())
 	
 	assert camera.isOpened(), 'Cannot capture source'
 	while True:
-		#Capture frame-by-frame
-		success, frame = camera.read()  # read the camera frame
+		success, frame = camera.read()  
 		if not success:
 			break
 		else:
@@ -158,10 +148,8 @@ def gen_frames(camera):
 	
 def capture_and_predict(MODEL_SIZE, MAX_CAP, BLUR_THRESHOLD, interpreter, input_details, output_details):
 	image_id = get_image_id()
-	# print(image_id)
-	# input_size = (MODEL_SIZE, MODEL_SIZE)
 	img, original_img = capture_perfect(MODEL_SIZE, MAX_CAP, BLUR_THRESHOLD)
-	# print(img.shape)
+
 	if img is not None:
 		predictions = predict(interpreter, input_details, output_details, img, MODEL_SIZE[0])
 		# print(predictions)
@@ -223,3 +211,75 @@ def auto_detect_img(MODEL_SIZE, interpreter, input_details, output_details):
 			
 	camera.release()
 	return None
+
+def get_delete_imglist(image_dir, value, type_):
+	img_list = os.listdir(image_dir)
+	val = value.split('-')
+
+	result_list = []
+	for img in img_list:
+		date = img.split('(')[0]
+		y, m, d = date.split('-')
+
+		if type_ == 'day':
+			if d==val[0] and m==val[1] and y==val[2]:
+				result_list.append(img)
+		elif type_ == 'month':
+			if m==val[0] and y==val[1]:
+				result_list.append(img)
+		elif type_ == 'week':
+			_, w, _ = datetime.date(int(y), int(m), int(d)).isocalendar()
+			if y==val[1] and str(w)==val[0]:
+				result_list.append(img)
+	return result_list
+
+def get_space_info(path):
+	return shutil.disk_usage(path)
+
+def convert_to_dict(data_list):
+	result_dict = {}
+	for data in data_list:
+		result_dict[data[0]] = {'num_images': data[1],
+								'total_space': data[2]} 
+	return result_dict
+
+def delete_imgs(im_dir, img_list):
+
+	for img in img_list:
+		os.remove(im_dir+img)
+
+# def update_database():
+	
+# 	img_list = os.listdir('./static/')
+# 	data_dict = {'Daily': {},
+# 				 'Monthly': {},
+# 				 'Weekly': {}} 
+# 	for img in img_list:
+# 		date = img.split('(')[0]
+# 		y, m, d = date.split('-')
+# 		_, w, _ = datetime.date(int(y), int(m), int(d)).isocalendar()
+# 		d_f = d+'-'+m+'-'+y
+# 		data_dict['Daily'][d_f] = {'num_images': }
+
+# 	get_delete_imglist('./static/', )
+	
+def update_database(type_, value):
+
+	if type_ == 'day':
+		d_data = database.get_data_id('database.db', 'Daily', 'Day', value)
+		database.delete_data('database.db', 'Daily', 'Day', value)
+		d, m, y = value.split('-')
+		m_data = database.get_data_id('database.db', 'Monthly', 'Month', m+'-'+y)
+		m_imgs, m_space = m_data[1]-d_data[1], m_data[2]-d_data[2]
+		database.update_data_id('database.db', 'Monthly', 'Month', m+'-'+y, m_imgs, m_space)
+
+		_, w, _ = datetime.date(int(y), int(m), int(d)).isocalendar()
+		w_data = database.get_data_id('database.db', 'Monthly', 'Month', w+'-'+y)
+		w_imgs, w_space = w_data[1]-d_data[1], w_data[2]-d_data[2]
+		database.update_data_id('database.db', 'Weekly', 'Week', w+'-'+y, w_imgs, w_space)
+
+	elif type_ == 'month':
+		database.delete_data('database.db', 'Monthly', 'Month', value)
+		for i in range(1,32):
+			database.delete_data('database.db', 'Daily', 'Day', i+'-'+value)
+		
