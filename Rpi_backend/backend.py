@@ -20,12 +20,10 @@ def initilize(model_path):
 	return interpreter, input_details, output_details
 
 def capture(cap, MODEL_SIZE, blur_threshold=100):
-	# cap = cv2.VideoCapture(0)
 	assert cap.isOpened(), 'Cannot capture source'
 	if cap.isOpened():
 		ret, frame = cap.read()
 		if ret:
-			#cv2.imwrite("capture/capture_"+str(CNT)+".jpg", frame)
 			gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 			fm = variance_of_laplacian(gray)
 			print("blur = ",fm)
@@ -46,7 +44,7 @@ def predict(interpreter, input_details, output_details, input_array, input_size)
 
 	try:
 		boxes, pred_conf = filter_boxes(pred[0], pred[1], score_threshold=0.25, input_shape=tf.constant([input_size, input_size]))
-		# print(boxes, pred_conf)
+		
 
 		boxes, scores, classes, valid_detections = tf.image.combined_non_max_suppression(
 				boxes=tf.reshape(boxes, (tf.shape(boxes)[0], -1, 1, 4)),
@@ -62,19 +60,13 @@ def predict(interpreter, input_details, output_details, input_array, input_size)
 		return None
 
 
-class NumpyArrayEncoder(JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        return JSONEncoder.default(self, obj)
-
 def process_predictions(predictions, image_id):
 	num_det = predictions[3][0]
  
-	  # TODO check .tolist()             
-	boxes = predictions[0][0][:num_det]
-	scores = predictions[1][0][:num_det]
-	classes = predictions[2][0][:num_det]
+            
+	boxes = predictions[0][0][:num_det].tolist()
+	scores = predictions[1][0][:num_det].tolist()
+	classes = predictions[2][0][:num_det].tolist()
 
 	class_names = get_class_names(predictions[2][0][:num_det])
 
@@ -85,7 +77,7 @@ def process_predictions(predictions, image_id):
 				"num_det": str(num_det)
 				}
 	
-	encodedData = json.dumps(results, cls=NumpyArrayEncoder)
+	encodedData = json.dumps(results)
 
 	return encodedData
 
@@ -101,8 +93,6 @@ def get_class_names(classes):
 def make_bbox(original_img, pred_bbox, cnt):
 	labels = read_class_names('coco.names')
 	image = draw_bbox(original_img, pred_bbox, labels)
-	#print(image.shape)
-	# cv2.imwrite("static/capture__"+str(cnt)+".jpg", original_img)
 	cv2.imwrite("static/capture_"+str(cnt)+".jpg", image)
 	
 def variance_of_laplacian(image):
@@ -139,6 +129,7 @@ def gen_frames(camera):
 		if not success:
 			break
 		else:
+			frame = cv2.resize(frame, (420,320))
 			ret, buffer = cv2.imencode('.jpg', frame)
 			frame = buffer.tobytes()
 			yield (b'--frame\r\n'
@@ -176,15 +167,14 @@ def detect_motion(frame1, frame2):
 	return None
 
 def auto_detect_img(MODEL_SIZE, interpreter, input_details, output_details):
+	global AutoDetect
 	frame = None
 	camera = cv2.VideoCapture(0)
-	config = get_config('app.config')
-	status = config['AutoDetect']
 
 	ret, frame1 = camera.read()
 	ret, frame2 = camera.read()
 
-	while status == 'ON' and camera.isOpened():
+	while AutoDetect and camera.isOpened():
 		frame = detect_motion(frame1, frame2)
 
 		if frame is not None:
@@ -204,8 +194,6 @@ def auto_detect_img(MODEL_SIZE, interpreter, input_details, output_details):
 				img = {'image': img}
 				r = requests.post(url="http://127.0.0.1:8000/get_auto", files=img, data=data)
 				print(r.status_code)
-		config = get_config('app.config')
-		status = config['AutoDetect']
 		frame1 = frame2
 		ret, frame2 = camera.read()
 			
@@ -248,20 +236,6 @@ def delete_imgs(im_dir, img_list):
 	for img in img_list:
 		os.remove(im_dir+img)
 
-# def update_database():
-	
-# 	img_list = os.listdir('./static/')
-# 	data_dict = {'Daily': {},
-# 				 'Monthly': {},
-# 				 'Weekly': {}} 
-# 	for img in img_list:
-# 		date = img.split('(')[0]
-# 		y, m, d = date.split('-')
-# 		_, w, _ = datetime.date(int(y), int(m), int(d)).isocalendar()
-# 		d_f = d+'-'+m+'-'+y
-# 		data_dict['Daily'][d_f] = {'num_images': }
-
-# 	get_delete_imglist('./static/', )
 	
 def update_database(type_, value):
 

@@ -8,17 +8,54 @@ import requests
 from threading import Thread
 import database
 import os
+import numpy as np
 
 MODEL_PATH = './weights/yolov4-416-tiny.tflite'
 input_size = 416
 MODEL_SIZE = (input_size, input_size)
 CONFIG = None
 camera = None
+AutoDetect = False
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
 
 interpreter, input_details, output_details = backend.initilize(MODEL_PATH)
+
+def auto_detect_img(MODEL_SIZE, interpreter, input_details, output_details):
+	global AutoDetect
+	frame = None
+	camera = cv2.VideoCapture(0)
+	
+	ret, frame1 = camera.read()
+	ret, frame2 = camera.read()
+
+	while AutoDetect and camera.isOpened():
+		frame = backend.detect_motion(frame1, frame2)
+
+		if frame is not None:
+			input_array = utils.prep_image(frame, MODEL_SIZE)
+			input_array = np.float32(input_array)
+			image_id = backend.get_image_id()
+		
+			predictions = backend.predict(interpreter, input_details, output_details, input_array, MODEL_SIZE[0])
+			cv2.imwrite("static/auto.jpg", frame)
+
+			if predictions[3][0] > 0:
+				results = backend.process_predictions(predictions, image_id)
+			
+				img = open('static/auto.jpg', 'rb')
+			
+				data = {'data':results}
+				img = {'image': img}
+				r = requests.post(url="http://127.0.0.1:8000/get_auto", files=img, data=data)
+				print(r.status_code)
+		
+		frame1 = frame2
+		ret, frame2 = camera.read()
+			
+	camera.release()
+	return None
 
 @app.route('/', methods=['GET'])
 def home():
@@ -27,8 +64,6 @@ def home():
 	if camera is not None:
 		camera.release()
 		camera = None
-	# r = requests.get('http://127.0.0.1:8000/config')
-	# CONFIG = r.json()
 
 	data = {"statues": "connected"}
 	return Response(data, content_type='application/json')
@@ -108,17 +143,16 @@ def get_config():
 @app.route('/auto_capture/<tag>', methods=['GET'])
 def auto_capture(tag):
 	global camera
+	global AutoDetect
 	if camera is not None:
 		camera.release()
 		camera = None
 	if tag == "1":
-		config = {"AutoDetect" : "ON"}
-		utils.set_config('app.config', config)
-		t1 = Thread(target=backend.auto_detect_img, args=[MODEL_SIZE, interpreter, input_details, output_details])
+		AutoDetect = True
+		t1 = Thread(target=auto_detect_img, args=[MODEL_SIZE, interpreter, input_details, output_details])
 		t1.start()
 	elif tag == "0":
-		config = {"AutoDetect" : "OFF"}
-		utils.set_config('app.config', config)
+		AutoDetect = False
 	
 	return "OK"
 
@@ -136,9 +170,9 @@ def get_data():
 
 	result_dict = {
 		'space_stat': {
-			'totel_space': space_stat[0],
-			'used_space': space_stat[1],
-			'free_space': space_stat[2]
+			'totel_space': space_stat[0]/1000000000,
+			'used_space': space_stat[1]/1000000000,
+			'free_space': space_stat[2]/1000000000
 			},
 		'daily_data': daily_dict,
 		'monthly_data': monthly_dict,
@@ -153,7 +187,6 @@ def clean_space(tag):
 	delete_list = backend.get_delete_imglist('./static/', value, type_)
 	backend.delete_imgs('./static/', delete_list)
 
-	# backend.update_database(delete_list)
 	if type_ == 'day':
 		database.delete_data('database.db', 'Daily', 'Day', value)
 	elif type_ == 'month':
@@ -169,7 +202,6 @@ def delete_last(tag):
 	img_list = os.listdir('./static/')
 	img_list.sort()
 	backend.delete_imgs('./static/', img_list)
-
 
 	data = {"clean": "True"}	
 	return Response(data, content_type='application/json')

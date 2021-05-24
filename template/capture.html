@@ -1,45 +1,51 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 
-<div id="main" class="container-md">
+<div id="main" class="container-fluid">
+  <div class="row">
+    <div id="left" class="col-lg-9 container-md">
+      {% if is_capture %}
+      <div id="image" class="container-md">
+        <img src="{{filename}}" class="img-fluid" alt="Responsive image" />
+      </div>
 
-  {% if is_capture %}
-  <div id="image" class="container-md">
-    <img src={{filename}} class="img-fluid" alt="Responsive image">
-  </div>
-
-
-  <div id="data" class="container-md">
-    <table class="table table-bordered table-responsive-sm table-responsive-md table-success table-striped">
-        <thead>
-            <tr>
-                <th>Image Id</th>
-                <th>Class</th>
-                <th>BBox</th>
-                <th>Score</th>
-                <th>Detections</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
+      <div id="data" class="container-md justify-content-center">
+        <table class="table table-bordered table-responsive-sm table-responsive-md table-success table-striped">
+          <thead>
+              <tr>
+                  <th>Image Id</th>
+                  <th>Class</th>
+                  <th>BBox</th>
+                  <th>Score</th>
+                  <th>Detections</th>
+              </tr>
+          </thead>
+          <tbody>
+              <tr>
                 <td>{{data.image_id}}</td>
                 <td>{{data.classes}}</td>
                 <td>{{data.boxes}}</td>
                 <td>{{data.scores}}</td>
                 <td>{{data.num_det}}</td>
-            </tr>
+              </tr>
 
-        </tbody>
-    </table>
-  </div>
-  {% endif %}
+          </tbody>
+      </table>
+      </div>
+      {% endif %}
+      <div id="button" class="container-md">
+        <a href="/capture/1">
+          <button class="btn btn-primary">Capture</button>
+        </a>
+      </div>
+    </div>
 
-  <div id="button" class="container-md">
-    <a href="/capture/1">
-      <button class="btn btn-primary">Capture</button>
-    </a>
+    <div id="right" class="col-lg-3">
+      <div id="image" class="container-md">
+        <img src="{{video_url}}" class="img-fluid" alt="Responsive image" />
+      </div>
+    </div>
   </div>
 </div>
 
-
-{% endblock %}
+  {% endblock %}
+</div>

@@ -33,75 +33,96 @@ def home():
 @app.route('/capture/<tag>', methods=['GET'])
 def capture(tag):
 	global conn
+	try:
+		if tag=="1":
+			response = requests.get(CONFIG["HOST_ADDR"] + "/api/capture")
 
-	if tag == "1":
-		response = requests.get(CONFIG["HOST_ADDR"] + "/api/capture")
+			if response.status_code != 200:
+				conn = False
+				return render_template('capture.html', Data=False, conn=conn)
 
-		if response.status_code != 200:
-			conn = False
-			return render_template('capture.html', Data=False, conn=conn)
+			data = response.json()
+			data = json.loads(data)
+			img_id = data['image_id']
 
-		data = response.json()
-		data = json.loads(data)
-		img_id = data['image_id']
-
-		predictions = [np.array([data['boxes']]), np.array([data['scores']]), np.array([data['classes']]), np.array([int(data['num_det'])])]
-		
-		img_url = CONFIG["HOST_ADDR"] + "/api/img/"+str(img_id)
-		try:
-			r = requests.get(img_url)
+			predictions = [np.array([data['boxes']]), np.array([data['scores']]), np.array([data['classes']]), np.array([int(data['num_det'])])]
 			
-			file = open('images/'+img_id+'.jpg', 'wb')
-			file.write(r.content)
-			file.close()
-		except:
-			pass
+			img_url = CONFIG["HOST_ADDR"] + "/api/img/"+str(img_id)
+			try:
+				r = requests.get(img_url)
+				
+				file = open('images/'+img_id+'.jpg', 'wb')
+				file.write(r.content)
+				file.close()
+			except:
+				pass	
 
-		if data['num_det'] != "0":
-			utils.make_bbox(predictions, img_id)
-			bbox, classes, scores = utils.convert_data(data)
-			classes_name = utils.get_class_names(data['classes'])
+			if data['num_det'] != "0":
+				utils.make_bbox(predictions, img_id)
+				bbox, classes, scores = utils.convert_data(data)
+				classes_name = utils.get_class_names(data['classes'])
 
-			db.insert_data(CONFIG["DB_PATH"], 'Detections', (img_id, bbox, classes_name, scores, data['num_det']))
+				db.insert_data(CONFIG["DB_PATH"], 'Detections', (img_id, bbox, classes_name, scores, data['num_det']))
 
 
-		data['classes'] = utils.get_class_names(data['classes'])
-		data['boxes'] = np.round(data['boxes'], 3)
-		data['scores'] = np.round(data['scores'], 3)
-		filename = '/img/'+str(img_id)
+			data['classes'] = utils.get_class_names(data['classes'])
+			data['boxes'] = np.round(data['boxes'], 3)
+			data['scores'] = np.round(data['scores'], 3)
+			filename = '/img/'+str(img_id)
 
-		return render_template('capture.html', is_capture=True, data=data, filename=filename, conn=conn)
-	
-	else:
-		return render_template('capture.html', is_capture=False, conn=conn)
+			video_url = CONFIG["HOST_ADDR"] + "/video_feed"
+
+
+			return render_template('capture.html', is_capture=True, data=data, filename=filename, conn=conn, video_url=video_url)
+		
+		else:
+			try:
+				response = requests.get(CONFIG["HOST_ADDR"] + "/release_cam")
+			except:
+				pass
+			return render_template('capture.html', is_capture=False, conn=conn)
+	except:
+		error_msg = "capture error"
+		return render_template('error.html', error=error_msg, conn=conn)
 	
 @app.route('/stream/<tag>')
 def stream(tag):
 	"""Video streaming home page."""
 	global conn
-
-	if tag == "1":
-		video_url = CONFIG["HOST_ADDR"] + "/video_feed"
-		return render_template('stream.html', is_stream=True, video_url=video_url, conn=conn)
-	else: 
-		return render_template('stream.html', is_stream=False, conn=conn)
+	try:
+		if tag == "1":
+			video_url = CONFIG["HOST_ADDR"] + "/video_feed"
+			return render_template('stream.html', is_stream=True, video_url=video_url, conn=conn)
+		else: 
+			try:
+				response = requests.get(CONFIG["HOST_ADDR"] + "/release_cam")
+			except:
+				pass
+			return render_template('stream.html', is_stream=False, conn=conn)
+	except:
+		error_msg = "stream error"
+		return render_template('error.html', error=error_msg, conn=conn)
 
 @app.route('/history')
 def get_history():
 	global conn
 	try:
-		conn_statues = requests.get(CONFIG["HOST_ADDR"] + "/") 
-		if conn_statues.status_code == 200:
-			conn = True
-	except:
-		conn = False
-	try:
-		response = requests.get(CONFIG["HOST_ADDR"] + "/release_cam")
-	except:
-		pass
+		try:
+			conn_statues = requests.get(CONFIG["HOST_ADDR"] + "/") 
+			if conn_statues.status_code == 200:
+				conn = True
+		except:
+			conn = False
+		try:
+			response = requests.get(CONFIG["HOST_ADDR"] + "/release_cam")
+		except:
+			pass
 
-	data = db.get_all_data(CONFIG["DB_PATH"], 'Detections')
-	return render_template('history.html', data=data, conn=conn)
+		data = db.get_all_data(CONFIG["DB_PATH"], 'Detections')
+		return render_template('history.html', data=data, conn=conn)
+	except:
+		error_msg = "history fatch error"
+		return render_template('error.html', error=error_msg, conn=conn)
 
 @app.route('/his_result/<img_id>')
 def get_his_data(img_id):
@@ -128,24 +149,27 @@ def delete(img_id):
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
 	global conn
-
 	try:
-		response = requests.get(CONFIG["HOST_ADDR"] + "/release_cam")
+		try:
+			response = requests.get(CONFIG["HOST_ADDR"] + "/release_cam")
+		except:
+			pass
+
+		if request.method == 'POST':
+			CONFIG['HOST_ADDR'] = request.form.get('host_add')
+			CONFIG['DB_PATH'] = request.form.get('db_path')
+			CONFIG['MAX_CAP'] = request.form.get('max_cap')
+			CONFIG['BLUR_THRESHOLD'] = request.form.get('blur_th')
+
+			r = requests.post(url=CONFIG['HOST_ADDR']+"/get_config", data=CONFIG)
+
+			utils.set_config("app.config", CONFIG)
+			return redirect('/settings')
+		else:
+			return render_template('settings.html', data=CONFIG, conn=conn)
 	except:
-		pass
-
-	if request.method == 'POST':
-		CONFIG['HOST_ADDR'] = request.form.get('host_add')
-		CONFIG['DB_PATH'] = request.form.get('db_path')
-		CONFIG['MAX_CAP'] = request.form.get('max_cap')
-		CONFIG['BLUR_THRESHOLD'] = request.form.get('blur_th')
-
-		r = requests.post(url=CONFIG['HOST_ADDR']+"/get_config", data=CONFIG)
-
-		utils.set_config("app.config", CONFIG)
-		return redirect('/settings')
-	else:
-		return render_template('settings.html', data=CONFIG, conn=conn)
+		error_msg = "settings page error"
+		return render_template('error.html', error=error_msg, conn=conn)
 
 @app.route('/config', methods=['GET'])
 def send_config():
@@ -154,13 +178,16 @@ def send_config():
 
 @app.route('/auto_cap/<tag>', methods=['GET'])
 def auto(tag):
-	
-	if tag == "on":
-		res = requests.get(CONFIG['HOST_ADDR']+'/auto_capture/1')
-	elif tag == 'off':
-		res = requests.get(CONFIG['HOST_ADDR']+'/auto_capture/0')
-	
-	return render_template('auto_cap.html', conn=conn)
+	try:
+		if tag == "on":
+			res = requests.get(CONFIG['HOST_ADDR']+'/auto_capture/1')
+		elif tag == 'off':
+			res = requests.get(CONFIG['HOST_ADDR']+'/auto_capture/0')
+		
+		return render_template('auto_cap.html', conn=conn)
+	except:
+		error_msg = "auto_cap error"
+		return render_template('error.html', error=error_msg, conn=conn)
 
 @app.route('/get_auto', methods=['POST'])
 def get_auto():
@@ -184,10 +211,17 @@ def get_auto():
 @app.route('/manage_rpi', methods=['GET'])
 def manage_rpi():
 	global conn
+	try:
+		try:
+			response = requests.get(CONFIG["HOST_ADDR"] + "/release_cam")
+		except:
+			pass
+		space_data = requests.get(CONFIG['HOST_ADDR']+'/get_data')
 
-	space_data = requests.get(CONFIG['HOST_ADDR']+'/get_data')
-
-	return render_template('manage_rpi.html', conn=conn, data=space_data.json())
+		return render_template('manage_rpi.html', conn=conn, data=space_data.json())
+	except:
+		error_msg = "manage_rpi page error"
+		return render_template('error.html', error=error_msg, conn=conn)
 
 @app.route('/delete_imgs/<tag>', methods=['GET'])
 def delete_imgs(tag):
