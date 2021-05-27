@@ -22,7 +22,7 @@ app.config["DEBUG"] = True
 
 interpreter, input_details, output_details = backend.initilize(MODEL_PATH)
 
-def auto_detect_img(MODEL_SIZE, interpreter, input_details, output_details):
+def auto_detect_img(MODEL_SIZE, interpreter, input_details, output_details, motion_thresh):
 	global AutoDetect
 	frame = None
 	camera = cv2.VideoCapture(0)
@@ -31,7 +31,7 @@ def auto_detect_img(MODEL_SIZE, interpreter, input_details, output_details):
 	ret, frame2 = camera.read()
 
 	while AutoDetect and camera.isOpened():
-		frame = backend.detect_motion(frame1, frame2)
+		frame = backend.detect_motion(frame1, frame2, motion_thresh)
 
 		if frame is not None:
 			input_array = utils.prep_image(frame, MODEL_SIZE)
@@ -144,18 +144,36 @@ def get_config():
 def auto_capture(tag):
 	global camera
 	global AutoDetect
+	global CONFIG
 	if camera is not None:
 		camera.release()
 		camera = None
+
+	if CONFIG is None:
+		r = requests.get('http://127.0.0.1:8000/config')
+		CONFIG = r.json()
+	
 	if tag == "1":
 		AutoDetect = True
-		t1 = Thread(target=auto_detect_img, args=[MODEL_SIZE, interpreter, input_details, output_details])
+		t1 = Thread(target=auto_detect_img, 
+					args=[MODEL_SIZE, interpreter, input_details,	 
+						output_details, int(CONFIG['MOTION_THRESHOLD'])])
 		t1.start()
 	elif tag == "0":
 		AutoDetect = False
 	
 	return "OK"
 
+@app.route('/delete_last_imgs/<tag>', methods=['GET'])
+def delete_last(tag):
+	img_list = os.listdir('./static/')
+	img_list.sort()
+	backend.delete_imgs('./static/', img_list[:int(tag)])
+
+	data = {"clean": "True"}	
+	return Response(data, content_type='application/json')
+
+###################################################################################3
 @app.route('/get_data', methods=['GET'])
 def get_data():
 	space_stat = backend.get_space_info('./static')
@@ -168,6 +186,8 @@ def get_data():
 	monthly_dict = backend.convert_to_dict(monthly_data)
 	weekly_dict = backend.convert_to_dict(weekly_data)
 
+	num_images = backend.get_available_img('./static')
+
 	result_dict = {
 		'space_stat': {
 			'totel_space': space_stat[0]/1000000000,
@@ -176,7 +196,8 @@ def get_data():
 			},
 		'daily_data': daily_dict,
 		'monthly_data': monthly_dict,
-		'weekly_data': weekly_dict
+		'weekly_data': weekly_dict,
+		'num_images': num_images
 	}
 	return jsonify(result_dict)
 
@@ -197,15 +218,7 @@ def clean_space(tag):
 	data = {"clean": "True"}	
 	return Response(data, content_type='application/json')
 
-@app.route('/delete_last_imgs/<tag>', methods=['GET'])
-def delete_last(tag):
-	img_list = os.listdir('./static/')
-	img_list.sort()
-	backend.delete_imgs('./static/', img_list)
-
-	data = {"clean": "True"}	
-	return Response(data, content_type='application/json')
-
+##############################################################################################3
 
 
 if __name__ == "__main__":

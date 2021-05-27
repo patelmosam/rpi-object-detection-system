@@ -1,10 +1,19 @@
 import sqlite3
+from pathlib import Path
+
+def Check_db(db_path):
+    dbpath = Path(db_path)
+
+    if not dbpath.exists():
+        Init_db(db_path, "Detections")
+        Init_db(db_path, "auto_data")
+        print('Database Created')
 
 def Init_db(db_path, Table):
     conn = sqlite3.connect(db_path)
     print("Opened database successfully")
 
-    conn.execute('CREATE TABLE "+Table+" (image_id TEXT, bbox TEXT, classes TEXT, scores TEXT, num_det TEXT)')
+    conn.execute('CREATE TABLE '+Table+' (image_id TEXT, bbox TEXT, classes TEXT, scores TEXT, num_det TEXT)')
     print("Table created successfully")
     conn.close()
 

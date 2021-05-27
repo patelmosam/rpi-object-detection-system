@@ -143,14 +143,13 @@ def capture_and_predict(MODEL_SIZE, MAX_CAP, BLUR_THRESHOLD, interpreter, input_
 
 	if img is not None:
 		predictions = predict(interpreter, input_details, output_details, img, MODEL_SIZE[0])
-		# print(predictions)
 		# make_bbox(original_img, predictions, image_id)
 		cv2.imwrite("static/capture_"+str(image_id)+".jpg", original_img)
 		results = process_predictions(predictions, image_id)
 		return results
 	return None
 
-def detect_motion(frame1, frame2):
+def detect_motion(frame1, frame2, motion_thresh):
 	diff = cv2.absdiff(frame1, frame2)
 	gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
 	blur = cv2.GaussianBlur(gray, (5,5), 0)
@@ -161,7 +160,7 @@ def detect_motion(frame1, frame2):
 	contours, _ = cv2.findContours(dilated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 	
 	for contour in contours:
-		if cv2.contourArea(contour) > 900:
+		if cv2.contourArea(contour) > motion_thresh:
 			return frame2
 
 	return None
@@ -200,6 +199,25 @@ def auto_detect_img(MODEL_SIZE, interpreter, input_details, output_details):
 	camera.release()
 	return None
 
+def get_space_info(path):
+	return shutil.disk_usage(path)
+
+def convert_to_dict(data_list):
+	result_dict = {}
+	for data in data_list:
+		result_dict[data[0]] = {'num_images': data[1],
+								'total_space': data[2]} 
+	return result_dict
+
+def delete_imgs(im_dir, img_list):
+	for img in img_list:
+		os.remove(im_dir+img)
+
+def get_available_img(image_dir):
+	img_list = os.listdir(image_dir)
+	return len(img_list)
+
+########################################################################################3
 def get_delete_imglist(image_dir, value, type_):
 	img_list = os.listdir(image_dir)
 	val = value.split('-')
@@ -221,22 +239,6 @@ def get_delete_imglist(image_dir, value, type_):
 				result_list.append(img)
 	return result_list
 
-def get_space_info(path):
-	return shutil.disk_usage(path)
-
-def convert_to_dict(data_list):
-	result_dict = {}
-	for data in data_list:
-		result_dict[data[0]] = {'num_images': data[1],
-								'total_space': data[2]} 
-	return result_dict
-
-def delete_imgs(im_dir, img_list):
-
-	for img in img_list:
-		os.remove(im_dir+img)
-
-	
 def update_database(type_, value):
 
 	if type_ == 'day':
@@ -257,3 +259,5 @@ def update_database(type_, value):
 		for i in range(1,32):
 			database.delete_data('database.db', 'Daily', 'Day', i+'-'+value)
 		
+###############################################################################################
+

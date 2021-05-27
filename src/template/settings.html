@@ -61,7 +61,7 @@
                 <div class="form-group">
                   <label class="form-label">Maximum Capture</label>
                   <input
-                    type="text"
+                    type="number"
                     id="max_cap"
                     name="max_cap"
                     class="form-control"
@@ -72,11 +72,22 @@
                 <div class="form-group">
                   <label class="form-label">Blur Threshold</label>
                   <input
-                    type="text"
+                    type="number"
                     id="blur_th"
                     name="blur_th"
                     class="form-control"
                     value="{{data.BLUR_THRESHOLD}}"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Motion Threshold</label>
+                  <input
+                    type="number"
+                    id="motion_th"
+                    name="motion_th"
+                    class="form-control"
+                    value="{{data.MOTION_THRESHOLD}}"
                   />
                 </div>
               </div>

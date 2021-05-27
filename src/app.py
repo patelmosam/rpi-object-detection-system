@@ -7,14 +7,18 @@ import json
 import utils
 import pickle
 from PIL import Image
+import os
 
 CONFIG = utils.get_config("app.config")
+db.Check_db('./database.db')
 
 app = Flask(__name__, template_folder='template')
 conn = False
 
 @app.route('/', methods=['GET'])
 def home():
+	''' home page '''
+
 	global conn
 	try:
 		conn_statues = requests.get(CONFIG["HOST_ADDR"])
@@ -29,9 +33,11 @@ def home():
 	except:
 		conn = False
 		return render_template('home.html', conn=conn)
+
 	
 @app.route('/capture/<tag>', methods=['GET'])
 def capture(tag):
+	''' capture & stream page '''
 	global conn
 	try:
 		if tag=="1":
@@ -84,10 +90,11 @@ def capture(tag):
 	except:
 		error_msg = "capture error"
 		return render_template('error.html', error=error_msg, conn=conn)
+
 	
 @app.route('/stream/<tag>')
 def stream(tag):
-	"""Video streaming home page."""
+	"""Video streaming page."""
 	global conn
 	try:
 		if tag == "1":
@@ -103,8 +110,10 @@ def stream(tag):
 		error_msg = "stream error"
 		return render_template('error.html', error=error_msg, conn=conn)
 
+
 @app.route('/history')
 def get_history():
+	''' history page '''
 	global conn
 	try:
 		try:
@@ -119,20 +128,30 @@ def get_history():
 			pass
 
 		data = db.get_all_data(CONFIG["DB_PATH"], 'Detections')
-		return render_template('history.html', data=data, conn=conn)
+		auto_data = db.get_all_data(CONFIG["DB_PATH"], 'auto_data')
+
+		return render_template('history.html', data=data, auto_data=auto_data, conn=conn)
 	except:
 		error_msg = "history fatch error"
 		return render_template('error.html', error=error_msg, conn=conn)
 
-@app.route('/his_result/<img_id>')
-def get_his_data(img_id):
+
+@app.route('/his_result/<tag>')
+def get_his_data(tag):
+	''' histroy page by image id '''
 	global conn
-	
-	data = db.get_data_id(CONFIG["DB_PATH"], 'Detections', img_id)
+	try: 
+		table, img_id = tag.split('+')
+		print(img_id, table)
+		data = db.get_data_id(CONFIG["DB_PATH"], table, img_id)
 
-	filename = CONFIG['SELF_ADDR']+"/img/"+str(img_id)
+		filename = CONFIG['SELF_ADDR']+"/img/"+str(img_id)
 
-	return render_template('his_result.html', data=data[0], filename=filename, conn=conn)
+		return render_template('his_result.html', data=data[0], filename=filename, conn=conn)
+	except:
+		error_msg = 'error in retriving history data'
+		return render_template('error.html', error=error_msg, conn=conn)
+
 
 @app.route('/img/<img_id>', methods=['GET'])
 def get_img(img_id):
@@ -140,14 +159,21 @@ def get_img(img_id):
 	return send_file(filename, mimetype='image/gif')
 
 
-@app.route('/delete/<img_id>', methods=['GET'])
-def delete(img_id):
-	
-	db.delete_data(CONFIG["DB_PATH"], 'Detections', img_id)
+@app.route('/delete/<tag>', methods=['GET'])
+def delete(tag):
+	''' delete image by id '''
+	table, img_id = tag.split('+')
+	db.delete_data(CONFIG["DB_PATH"], table, img_id)
+	try:
+		os.remove('./images/'+img_id+'.jpg')
+	except:
+		print('image not found: ', img_id)
 	return redirect('/history')
+
 
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
+	''' settings page '''
 	global conn
 	try:
 		try:
@@ -160,6 +186,7 @@ def settings():
 			CONFIG['DB_PATH'] = request.form.get('db_path')
 			CONFIG['MAX_CAP'] = request.form.get('max_cap')
 			CONFIG['BLUR_THRESHOLD'] = request.form.get('blur_th')
+			CONFIG['MOTION_THRESHOLD'] = request.form.get('motion_th')
 
 			r = requests.post(url=CONFIG['HOST_ADDR']+"/get_config", data=CONFIG)
 
@@ -171,6 +198,7 @@ def settings():
 		error_msg = "settings page error"
 		return render_template('error.html', error=error_msg, conn=conn)
 
+
 @app.route('/config', methods=['GET'])
 def send_config():
 	return jsonify(CONFIG)
@@ -178,6 +206,7 @@ def send_config():
 
 @app.route('/auto_cap/<tag>', methods=['GET'])
 def auto(tag):
+	''' auto_capture '''
 	try:
 		if tag == "on":
 			res = requests.get(CONFIG['HOST_ADDR']+'/auto_capture/1')
@@ -188,6 +217,7 @@ def auto(tag):
 	except:
 		error_msg = "auto_cap error"
 		return render_template('error.html', error=error_msg, conn=conn)
+
 
 @app.route('/get_auto', methods=['POST'])
 def get_auto():
@@ -201,7 +231,8 @@ def get_auto():
 	utils.make_bbox(predictions, "auto_"+data['image_id'])
 	
 	bbox, classes, scores = utils.convert_data(data)
-	data = (data['image_id'], bbox, classes, scores, data['num_det'])
+	classes_name = utils.get_class_names(data['classes'])
+	data = ('auto_'+data['image_id'], bbox, classes_name, scores, data['num_det'])
 	db.insert_data(CONFIG['DB_PATH'], 'auto_data', data)
 	
 	print('done')
@@ -223,9 +254,15 @@ def manage_rpi():
 		error_msg = "manage_rpi page error"
 		return render_template('error.html', error=error_msg, conn=conn)
 
-@app.route('/delete_imgs/<tag>', methods=['GET'])
+
+@app.route('/delete_imgs/<tag>', methods=['GET', 'POST'])
 def delete_imgs(tag):
-	req = requests.get(CONFIG['HOST_ADDR']+'/clean_space/'+tag)
+
+	if request.method == 'POST':
+		tag = request.form.get('num_imgs')
+		req = requests.get(CONFIG['HOST_ADDR']+'/delete_last_imgs/'+tag)
+	else:
+		req = requests.get(CONFIG['HOST_ADDR']+'/clean_space/'+tag)
 
 	return redirect('/manage_rpi')
 

@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block header %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='settings.css') }}"
+/>
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='tab.css') }}"
+/>
+{% endblock %} 
+{% block content %}
+  
+
+   <div id="main" class="container-md">
+ 
+        <h3>Detection History</h3>
+        
+        <ul class="nav nav-pills nav-justified">
+            <li class="nav-item">
+              <a
+              class="list-group-item list-group-item-action active"
+              data-toggle="list"
+              href="#capture"
+              >Capture History</a
+            >
+            </li>
+            <li class="nav-item">
+              <a
+              class="list-group-item list-group-item-action"
+              data-toggle="list"
+              href="#auto_det"
+              >Auto-detection History</a
+            >
+            </li>
+          </ul>
+          <div class="tab-content">
+
+            <div class="tab-pane fade active show" id="capture">
+                <div id="data" class="container-md">
+            
+                    <table class="table table-bordered table-responsive-sm table-responsive-md table-success table-striped">
+                        <thead>
+                        <tr>
+                            <th>Image Id</th>
+                            <th>Classes</th>
+                            <th>BBox</th>
+                            <th>Scores</th>
+                            <th>Detections</th>
+                            <th>Delete</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for d in data %}
+                        <tr>
+                            <td>
+                                <a href="/his_result/Detections+{{d[0]}}">{{d[0]}}</a>
+                            </td>
+                            <td>{{d[2]}}</td>
+                            <td>{{d[1]}}</td>
+                            <td>{{d[3]}}</td>
+                            <td>{{d[4]}}</td>
+                            <td><a href="/delete/Detections+{{d[0]}}">
+                                <button class="btn"><i class="fa fa-trash"></i></button>
+                              </a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="auto_det">
+                <div id="data" class="container-md">
+            
+                    <table class="table table-bordered table-responsive-sm table-responsive-md table-success table-striped">
+                        <thead>
+                        <tr>
+                            <th>Image Id</th>
+                            <th>Classes</th>
+                            <th>BBox</th>
+                            <th>Scores</th>
+                            <th>Detections</th>
+                            <th>Delete</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for d in auto_data %}
+                        <tr>
+                            <td>
+                                <a href="/his_result/auto_data+{{d[0]}}">{{d[0]}}</a>
+                            </td>
+                            <td>{{d[2]}}</td>
+                            <td>{{d[1]}}</td>
+                            <td>{{d[3]}}</td>
+                            <td>{{d[4]}}</td>
+                            <td><a href="/delete/auto_data+{{d[0]}}">
+                                <button class="btn"><i class="fa fa-trash"></i></button>
+                              </a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    </table>
+                </div>
+            </div>
+          </div>
+
+    </div>
+
+    {% endblock %}
