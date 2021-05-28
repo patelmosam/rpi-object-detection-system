@@ -10,7 +10,7 @@
 5. To goto auto-capture page or turn off auto-capture: "/auto_cap/off"
 6. To turn on auto-capture: "auto_cap/on"
 7. To goto history page (Displays all detections): "/history"
-7. To see perticular detection result: "/his_result/<image_id>"
+7. To see particular detection result: "/his_result/<image_id>"
 8. To goto settings page: "/settings"
 9. To goto manage RPI page: "/manage_rpi"
 10. To get image by ID: "/img/<image_id>"
@@ -53,11 +53,11 @@
 3.  '/history':
         |--> '/api' :(GET)  To check connection statues
         |--> '/api/release_cam' :(GET) To release camera
-        |--> fatch all data from database
+        |--> fetch all data from database
 
 4.  '/his_result/<img_id>:
         |--> '/img/<img_id>' :(GET) To get image by ID
-        |--> fatch row which has image_id=img_id from database
+        |--> fetch row which has image_id=img_id from database
         
 5.  '/delete/<img_id>:
         |--> delete row in database which has image_id=img_id
@@ -78,7 +78,7 @@
 
 9.  '/manage_rpi':
         |--> '/api/release_cam' :(GET) To release camera
-        |--> '/api/get_data' :(GET) TO get storege info data
+        |--> '/api/get_data' :(GET) TO get storage info data
 
 10. '/delete_imgs' (POST):
         |--> accepts data about num_images from manage RPI page
