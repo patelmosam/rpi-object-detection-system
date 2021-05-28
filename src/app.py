@@ -5,7 +5,6 @@ import requests
 import database as db
 import json
 import utils
-import pickle
 from PIL import Image
 import os
 
@@ -15,14 +14,15 @@ db.Check_db('./database.db')
 app = Flask(__name__, template_folder='template')
 conn = False
 
+
 @app.route('/', methods=['GET'])
 def home():
-	''' This function handels the request for home page. It checks the connection status with RPI and
-		renders the home page.
+	""" 
+	This function handels the request for home page. It checks the connection status with RPI and
+	renders the home page.
 
-		returns:- Http Response
-	'''
-
+	returns:- Http Response
+	"""
 	global conn
 	try:
 		conn_statues = requests.get(CONFIG["HOST_ADDR"]+'/api')
@@ -41,12 +41,13 @@ def home():
 	
 @app.route('/capture/<tag>', methods=['GET'])
 def capture(tag):
-	''' This function handels capture page request. If the tag in url is equal to "0" then it will render
-		the page with button to start live stream. If the tag in url is equal to "stream" then it will 
-		render the live stream page. And if the tag is equal to "1" then it will render the capture page.
+	""" 
+	This function handels capture page request. If the tag in url is equal to "0" then it will render
+	the page with button to start live stream. If the tag in url is equal to "stream" then it will 
+	render the live stream page. And if the tag is equal to "1" then it will render the capture page.
 
-		returns:- Http Response
-	'''
+	returns:- Http Response
+	"""
 	global conn
 	video_url = CONFIG["HOST_ADDR"] + "/api/video_feed"
 	try:
@@ -80,7 +81,6 @@ def capture(tag):
 
 				db.insert_data(CONFIG["DB_PATH"], 'Detections', (img_id, bbox, classes_name, scores, data['num_det']))
 
-
 			data['classes'] = utils.get_class_names(data['classes'])
 			data['boxes'] = np.round(data['boxes'], 3)
 			data['scores'] = np.round(data['scores'], 3)
@@ -104,11 +104,12 @@ def capture(tag):
 
 @app.route('/history')
 def get_history():
-	''' This function handels the request for history page. It will fatch the data from the database and
-		renders to history page.
+	""" 
+	This function handels the request for history page. It will fetch the data from the database and
+	renders to history page.
 
-		returns:- Http Response
-	'''
+	returns:- Http Response
+	"""
 	global conn
 	try:
 		try:
@@ -127,17 +128,18 @@ def get_history():
 
 		return render_template('history.html', data=data, auto_data=auto_data, conn=conn)
 	except:
-		error_msg = "history fatch error"
+		error_msg = "history fetch error"
 		return render_template('error.html', error=error_msg, conn=conn)
 
 
 @app.route('/his_result/<tag>')
 def get_his_data(tag):
-	''' This function handels the request for history results page for specific image_id. It will fatch the 
-		data form the database with the image_id and renders to the data to the his_result page. 
-		
-		returns:- Http Response
-	'''
+	""" 
+	This function handels the request for history results page for specific image_id. It will fetch the 
+	data form the database with the image_id and renders to the data to the his_result page. 
+	
+	returns:- Http Response
+	"""
 	global conn
 	try: 
 		table, img_id = tag.split('+')
@@ -154,22 +156,24 @@ def get_his_data(tag):
 
 @app.route('/img/<img_id>', methods=['GET'])
 def get_img(img_id):
-	''' This function handels the request for the image. It will return the image with the image_id provided 
-		in the url form the "./images/" folder.
+	""" 
+	This function handels the request for the image. It will return the image with the image_id provided 
+	in the url form the "./images/" folder.
 
-		returns:- Http Response
-	'''
+	returns:- Http Response
+	"""
 	filename = './images/' + str(img_id) + '.jpg'
 	return send_file(filename, mimetype='image/gif')
 
 
 @app.route('/delete/<tag>', methods=['GET'])
 def delete(tag):
-	''' This function handels the request for the delete. It will delete the data from database and "./images/"
-		folder with image_id. 
-		
-		returns:- Http Response
-	'''
+	""" 
+	This function handels the request for the delete. It will delete the data from database and "./images/"
+	folder with image_id. 
+	
+	returns:- Http Response
+	"""
 	table, img_id = tag.split('+')
 	db.delete_data(CONFIG["DB_PATH"], table, img_id)
 	try:
@@ -181,11 +185,12 @@ def delete(tag):
 
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
-	''' This function handels the request for settings page. If the request is GET then it will render the
-		settings page. And if the requset is POST then it will accepts the data form the settings page. 
-		
-		returns:- Http Response
-	'''
+	""" 
+	This function handels the request for settings page. If the request is GET then it will render the
+	settings page. And if the request is POST then it will accepts the data form the settings page. 
+	
+	returns:- Http Response
+	"""
 	global conn
 	try:
 		try:
@@ -213,21 +218,23 @@ def settings():
 
 @app.route('/config', methods=['GET'])
 def send_config():
-	'''	This function handels the request for the config file. It will return the config file.
+	"""	
+	This function handels the request for the config file. It will return the config file.
 
-		returns:- Http Response
-	'''
+	returns:- Http Response
+	"""
 	return jsonify(CONFIG)
 
 
 @app.route('/auto_cap/<tag>', methods=['GET'])
 def auto(tag):
-	''' This function handels the request for auto_capture. If the tag in url is equal to "on" then it 
-		will send the GET request for to start the auto-capture process on RPI. And if the tag is equal to 
-		"off" the it will send GET request for to stop auto-capture on RPI.
+	""" 
+	This function handels the request for auto_capture. If the tag in url is equal to "on" then it 
+	will send the GET request for to start the auto-capture process on RPI. And if the tag is equal to 
+	"off" the it will send GET request for to stop auto-capture on RPI.
 
-		returns:- Http Response
-	'''
+	returns:- Http Response
+	"""
 	try:
 		if tag == "on":
 			res = requests.get(CONFIG['HOST_ADDR']+'/api/auto_capture/1')
@@ -243,11 +250,12 @@ def auto(tag):
 
 @app.route('/get_auto', methods=['POST'])
 def get_auto():
-	''' This function handels the request for get the data from auto-capture process. It will accepts the
-		data(results and image) and  from POST request and stores into database and './images/' folder.
+	""" 
+	This function handels the request for get the data from auto-capture process. It will accepts the
+	data(results and image) and  from POST request and stores into database and './images/' folder.
 
-		returns:- Http Response
-	'''
+	returns:- Http Response
+	"""
 	results = request.form.get('data')
 	file = request.files['image']
 	
@@ -266,12 +274,14 @@ def get_auto():
 		
 	return "ok"
 
+
 @app.route('/manage_rpi', methods=['GET'])
 def manage_rpi():
-	'''	This function handels the request for manage_rpi page and rendera the manage_rpi page.
+	"""	
+	This function handels the request for manage_rpi page and rendera the manage_rpi page.
 
-		returns:- Http Response
-	'''
+	returns:- Http Response
+	"""
 	global conn
 	try:
 		try:
@@ -288,12 +298,13 @@ def manage_rpi():
 
 @app.route('/delete_imgs', methods=['POST'])
 def delete_imgs():
-	'''	This function handels the request for the delete_imgs. It will accepts the POST request and get the
-		data (num_images) from it. And send the GET request to RPI on '/delete_img' endpoint with num_images
-		sepcified in the tag.
+	"""	
+	This function handels the request for the delete_imgs. It will accepts the POST request and get the
+	data (num_images) from it. And send the GET request to RPI on '/delete_img' endpoint with num_images
+	specified in the tag.
 
-		returns:- Http Response
-	'''
+	returns:- Http Response
+	"""
 	if request.method == 'POST':
 		tag = request.form.get('num_imgs')
 		req = requests.get(CONFIG['HOST_ADDR']+'/api/delete_imgs/'+tag)
@@ -302,5 +313,5 @@ def delete_imgs():
 
 
 if __name__ == '__main__':
-    app.run(port=8000, debug=True, host='0.0.0.0')
-    
+	app.run(port=8000, debug=True, host='0.0.0.0')
+	

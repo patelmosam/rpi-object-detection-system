@@ -1,7 +1,6 @@
 import flask
-from flask import request, jsonify, render_template, url_for, send_file, Response
+from flask import request, jsonify, send_file, Response
 import backend 
-import datetime
 import utils
 import cv2
 import requests
@@ -19,24 +18,25 @@ AutoDetect = False
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
 
-interpreter, input_details, output_details = backend.initilize(MODEL_PATH)
+interpreter, input_details, output_details = backend.initialize(MODEL_PATH)
+
 
 def auto_detect_img(MODEL_SIZE, interpreter, input_details, output_details, motion_thresh):
-	''' This function executes the auto-detection process. It runs a while loop in which the motion detection 
-		is performed between two captuerd frames. If motion detection is true then only object detection is 
-		performed otherwise skipped. Every time when object detection is performed, the results and image are 
-		sent to server via post request. 
+	""" 
+	This function executes the auto-detection process. It runs a while loop in which the motion detection 
+	is performed between two captured frames. If motion detection is true then only object detection is 
+	performed otherwise skipped. Every time when object detection is performed, the results and image are 
+	sent to server via post request. 
 
-		params:- MODEL_SIZE <tuple> : eg. (416, 416)
-				 interpreter : tflite interperter object
-				 input_details <tf.tensor>
-				 output_details <tf.tensor>
-				 motion_thresh <int>
+	params:- MODEL_SIZE <tuple> : eg. (416, 416)
+			 interpreter : tflite interperter object
+			 input_details <tf.tensor>
+			 output_details <tf.tensor>
+			 motion_thresh <int>
 
-		returns:- None
-	'''
-	
-	global AutoDetect
+	returns:- None
+	"""
+    global AutoDetect
 	frame = None
 	camera = cv2.VideoCapture(0)
 	
@@ -70,13 +70,14 @@ def auto_detect_img(MODEL_SIZE, interpreter, input_details, output_details, moti
 	camera.release()
 	return None
 
+
 @app.route('/api', methods=['GET'])
 def home():
-	''' This function henldes the request for '/api' endpoint.
+	""" 
+	This function handles the request for '/api' endpoint.
 
-		returns:- Response 
-	'''
-
+	returns:- Response 
+	"""
 	global CONFIG
 	global camera
 	if camera is not None:
@@ -89,15 +90,16 @@ def home():
 
 @app.route('/api/capture', methods=['GET'])
 def capture_img():
-	''' This function hendels the capture & detection request. It captures the image, preprocess it, 
-		performs object detection and returns the result bake to the server. 
+	""" 
+	This function handles the capture & detection request. It captures the image, preprocess it, 
+	performs object detection and returns the result bake to the server. 
 
-		returns:- JSON Response => { 'image_id': <str>,
-									'bbox': <List>,
-									'classes: <List>,
-									'scores': <List>,
-									'num_det': <int> }
-	'''
+	returns:- JSON Response => { 'image_id': <str>,
+								'bbox': <List>,
+								'classes: <List>,
+								'scores': <List>,
+								'num_det': <int> }
+	"""
 	global camera
 	global CONFIG
 	results = None
@@ -130,22 +132,26 @@ def capture_img():
 					}
 		return jsonify(results)
 
+
 @app.route('/api/img/<img_id>', methods=['GET'])
 def get_img(img_id):
-	''' This function send the image requesed by 'img_id' from "./static/" folder.
+	""" 
+	This function send the image requested by 'img_id' from "./static/" folder.
 
-		params:- img_id: <str>
+	params:- img_id: <str>
 
-		returns:- Response : image
-	'''
+	returns:- Response : image
+	"""
 	filename = './static/' + str(img_id) + '.jpg'
 	return send_file(filename, mimetype='image/gif')
 
+
 @app.route('/api/video_feed')
 def video_feed():
-	''' This function is responsble for continusly capturing and sending the frame. It continuesly returns
-		the frames as response.
-	'''
+	""" 
+	This function is responsible for continuously capturing and sending the frame. It continuesly returns
+	the frames as response.
+	"""
 	global camera
 	if camera is not None:
 		camera.release()
@@ -154,12 +160,14 @@ def video_feed():
 	camera = cv2.VideoCapture(0)
 	return Response(backend.gen_frames(camera), mimetype='multipart/x-mixed-replace; boundary=frame')
 
+
 @app.route('/api/release_cam')
 def release_cam():
-	''' This function is used for releasing / turning off camera. 
+	""" 
+	This function is used for releasing / turning off camera. 
 
-		returns:- Response
-	'''
+	returns:- Response
+	"""
 	global camera
 	if camera is not None:
 		camera.release()
@@ -167,12 +175,14 @@ def release_cam():
 	data = {"release": "True"}
 	return Response(data, content_type='application/json')
 
+
 @app.route('/api/get_config', methods=['POST'])
 def get_config():
-	''' This function accecpts the POST request containing config file data.
+	""" 
+	This function accepts the POST request containing config file data.
 
-		returns:- Response
-	'''
+	returns:- Response
+	"""
 	global CONFIG
 	if request.method == 'POST':
 		CONFIG = request.form.to_dict()
@@ -181,14 +191,14 @@ def get_config():
 
 @app.route('/api/auto_capture/<tag>', methods=['GET'])
 def auto_capture(tag):
-	''' This function handels the auto-capture request. If the tag in url is equal to "1", then it sets 
-		the globle varialbe "AutoDetect" to True and starts a seprate thread which will execute the 
-		auto-capture process. And if the tag in url is equal to "0", then is set the globle varialbe 
-		"AutoDetect" to False which will break/stop the auto-capture process.
+	""" 
+	This function handels the auto-capture request. If the tag in url is equal to "1", then it sets 
+	the global variable "AutoDetect" to True and starts a seprate thread which will execute the 
+	auto-capture process. And if the tag in url is equal to "0", then is set the global variable 
+	"AutoDetect" to False which will break/stop the auto-capture process.
 
-		returns:- Response
-	'''
-
+	returns:- Response
+	"""
 	global camera
 	global AutoDetect
 	global CONFIG
@@ -211,13 +221,15 @@ def auto_capture(tag):
 	
 	return "OK"
 
+
 @app.route('/api/delete_imgs/<tag>', methods=['GET'])
 def delete_last(tag):
-	''' This function hendles the delete_images request. It deletes the oldest images from "./static" 
-		folder. The number of images to be deleted is provided in url tag.
+	""" 
+	This function handles the delete_images request. It deletes the oldest images from "./static" 
+	folder. The number of images to be deleted is provided in url tag.
 
-		returns:- Response
-	'''
+	returns:- Response
+	"""
 	img_list = os.listdir('./static/')
 	img_list.sort()
 	backend.delete_imgs('./static/', img_list[:int(tag)])
@@ -225,20 +237,22 @@ def delete_last(tag):
 	data = {"clean": "True"}	
 	return Response(data, content_type='application/json')
 
+
 @app.route('/api/get_data', methods=['GET'])
 def get_data():
-	''' This function handles the get_data request. It calculated the space occupied by './static/' 
-		folder and the number of images stored in that folder and sends that info as response.
+	""" 
+	This function handles the get_data request. It calculated the space occupied by './static/' 
+	folder and the number of images stored in that folder and sends that info as response.
 
-		returns:- Response 
-	'''
+	returns:- Response 
+	"""
 	space_stat = backend.get_space_info('./static')
 
 	num_images = backend.get_available_img('./static')
 
 	result_dict = {
 		'space_stat': {
-			'totel_space': space_stat[0]/1000000000,
+			'total_space': space_stat[0]/1000000000,
 			'used_space': space_stat[1]/1000000000,
 			'free_space': space_stat[2]/1000000000
 			},
@@ -248,5 +262,4 @@ def get_data():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
-    #app.run(debug=True, port=8080, host='0.0.0.0')
+	app.run(debug=True)
