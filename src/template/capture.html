@@ -1,9 +1,29 @@
 {% extends "base.html" %} {% block content %}
 
 <div id="main" class="container-fluid">
+  {% if is_stream %}
+    {% if home %}
+      <div id="button" class="container-md">
+        <a href="/capture/stream">
+          <button class="btn btn-primary">Stream</button>
+        </a>
+      </div>
+    {% else %}
+      <h3 class="mt-5">Live Streaming</h3>
+      <div id="image" class="container-md">
+        <img src={{video_url}} class="img-fluid" alt="Responsive image">
+      </div>
+
+      <div id="button" class="container-md">
+        <a href="/capture/1">
+          <button class="btn btn-primary">Capture</button>
+        </a>
+      </div>
+    {% endif %}
+
+  {% else %}
   <div class="row">
     <div id="left" class="col-lg-9 container-md">
-      {% if is_capture %}
       <div id="image" class="container-md">
         <img src="{{filename}}" class="img-fluid" alt="Responsive image" />
       </div>
@@ -29,9 +49,8 @@
               </tr>
 
           </tbody>
-      </table>
+        </table>
       </div>
-      {% endif %}
       <div id="button" class="container-md">
         <a href="/capture/1">
           <button class="btn btn-primary">Capture</button>
@@ -43,8 +62,14 @@
       <div id="image" class="container-md">
         <img src="{{video_url}}" class="img-fluid" alt="Responsive image" />
       </div>
+      <div id="button" class="container-md">
+        <a href="/capture/0">
+          <button class="btn btn-primary">Back</button>
+        </a>
+      </div>
     </div>
   </div>
+  {% endif %}
 </div>
 
   {% endblock %}

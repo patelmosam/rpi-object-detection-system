@@ -2,6 +2,14 @@ import sqlite3
 from pathlib import Path
 
 def Check_db(db_path):
+    ''' This function checks if the database is available in the specified path or not. If database
+        is not available then it will create the new database.
+
+        params:- db_path : <str>
+
+        returns:- None
+    '''
+
     dbpath = Path(db_path)
 
     if not dbpath.exists():
@@ -10,6 +18,14 @@ def Check_db(db_path):
         print('Database Created')
 
 def Init_db(db_path, Table):
+    ''' This function creates the table in database with predfined coloums. It will take the table name
+        as parameter and crates the table with that name with predfined coloums.
+
+        params:- db_path: <str>
+                 table: <str>
+
+        returns:- None
+    '''
     conn = sqlite3.connect(db_path)
     print("Opened database successfully")
 
@@ -19,6 +35,14 @@ def Init_db(db_path, Table):
 
 
 def insert_data(db_path, Table, data):
+    ''' This function is responsible for inserting the data into database table specified in the parameters.
+
+        params:- db_path: <str>
+                 table: <str>
+                 data: <tuple> or <list>
+
+        returns:- None
+    '''
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
 
@@ -30,6 +54,14 @@ def insert_data(db_path, Table, data):
     conn.close()
 
 def get_all_data(db_path, Table):
+    ''' This function fatches and returns the all data from the database table specified in the parameters.
+
+        params:- db_path: <str>
+                 table: <str>
+
+        returns:- row: <tuple>
+    '''
+
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
 
@@ -40,6 +72,16 @@ def get_all_data(db_path, Table):
     return row
 
 def get_data_id(db_path, Table, image_id):
+    ''' This function fatches and return the data row from database table that matches the value of 
+        'image_id' coloum with the parameter 'image_id' value.
+
+        params:- db_path: <str>
+                 Table: <str>
+                 image_id: <str>
+
+        returns:- row: <tuple>
+    '''
+
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
 
@@ -49,6 +91,16 @@ def get_data_id(db_path, Table, image_id):
     return row
 
 def delete_data(db_path, Table, image_id):
+    ''' This function deletes the row in the database table(specified in the parameters) which match
+        with the image_id.
+
+        params:- db_path: <str>
+                Table: <str>
+                image_id: <str>
+
+        returns:- None      
+    '''
+
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
 

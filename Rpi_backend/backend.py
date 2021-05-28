@@ -11,7 +11,14 @@ import os
 import shutil
 
 def initilize(model_path):
+	''' This function loads the model and initialize the tf.lite interpreter.
 
+		params:- model_path: <str>
+
+		returns:- interpreter: <tflite object>
+				  input_details: <tf.tensor>
+				  output_details: <tf.tensor>
+	'''
 	interpreter = tf.lite.Interpreter(model_path=model_path)
 	interpreter.allocate_tensors()
 	input_details = interpreter.get_input_details()
@@ -20,6 +27,16 @@ def initilize(model_path):
 	return interpreter, input_details, output_details
 
 def capture(cap, MODEL_SIZE, blur_threshold=100):
+	''' This function captures frame from the camera and check for blurness. If the captured frame is
+	 	blur then return None otherwise returns the frame after processing it.
+
+		params:- cap: <cv2 camera object>
+				 MODEL_SIZE: <tuple>
+				 blur_threshold: <int>
+
+		returns:- input_array: <numpy.ndarray>
+				  frame: <numpy.ndarray>
+	'''
 	assert cap.isOpened(), 'Cannot capture source'
 	if cap.isOpened():
 		ret, frame = cap.read()
@@ -37,6 +54,22 @@ def capture(cap, MODEL_SIZE, blur_threshold=100):
 	return None, None
 
 def predict(interpreter, input_details, output_details, input_array, input_size):
+	''' This function perfoms object detections on given image data with tensorflow lite 
+		interpreter. After prediction it filers the result and applys the NMS(non maximum suppression)
+		on results. It returns the prediction results after converting them to numpy array.
+
+		params:- interpreter: <tflite object>
+				 input_details: <tf.tensor>
+				 output_details: <tf.tensor>
+				 input_array: <numpy.ndarray>
+				 input_size: <int>
+
+		returns:- boxes: <numpy.ndarray>
+				  scores: <numpy.ndarray>
+				  classes: <numpy.ndarray>
+				  valid_detections: <numpy.ndarray>
+	'''
+
 	interpreter.set_tensor(input_details[0]['index'], input_array)
 	interpreter.invoke()
 
@@ -61,9 +94,16 @@ def predict(interpreter, input_details, output_details, input_array, input_size)
 
 
 def process_predictions(predictions, image_id):
+	''' This function converts the predictions (numpy array) to list and stores into the dict.
+		It returns the resultent dict after serializing it with 'json.dumps' method.
+
+		params:- predictions: <numpy.ndarray>
+				image_id: <str>
+
+		returns:- encodedData: <bytes>
+	'''
+
 	num_det = predictions[3][0]
- 
-            
 	boxes = predictions[0][0][:num_det].tolist()
 	scores = predictions[1][0][:num_det].tolist()
 	classes = predictions[2][0][:num_det].tolist()
@@ -82,6 +122,13 @@ def process_predictions(predictions, image_id):
 	return encodedData
 
 def get_class_names(classes):
+	''' This function takes list containing classes_id(int) and converts into list containing the 
+        classes name coresponing the class_id using 'read_class_names' function.
+
+        params:- classes: <list>
+
+        returns:- names: <list>
+    '''
 	labels = read_class_names('coco.names')
 	names = '['
 	for cls in classes:
@@ -89,16 +136,24 @@ def get_class_names(classes):
 	
 	names += ']'
 	return names
-
-def make_bbox(original_img, pred_bbox, cnt):
-	labels = read_class_names('coco.names')
-	image = draw_bbox(original_img, pred_bbox, labels)
-	cv2.imwrite("static/capture_"+str(cnt)+".jpg", image)
 	
 def variance_of_laplacian(image):
+	''' This function calculate the variance of the image array.
+
+		params:- image: <numpy.ndarray>
+
+		returns:- <int>
+	'''
 	return cv2.Laplacian(image, cv2.CV_64F).var()
 	
 def is_blured(image, threshold=100):
+	''' This function checks if the given image is blur of not. If blur the return True otherwise Flase.
+
+		params:- image: <numpy.ndarray>
+				 threshold: <int>
+
+		returns:- <bool>
+	'''
 	gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 	fm = variance_of_laplacian(gray)
 	print(fm)
@@ -107,6 +162,17 @@ def is_blured(image, threshold=100):
 	return False
 	
 def capture_perfect(camera, MODEL_SIZE, max_capture, blur_threshold):
+	''' This function captures the image using helper function "capture". If the capture function returns
+		the image the it will return it oterwise it will try again at most max_capture(int) times.
+
+		params:- camera: <cv2 camera object>
+				 MODEL_SIZE: <tuple>
+				 max_capture: <int>
+				 blur_threshold: <int>
+
+		returns:- img: <numpy.ndarray>
+                  original_img: <numpy.ndarray>
+	'''
 	for i in range(max_capture):
 		print("capture: ", i)
 		img, original_img = capture(camera, MODEL_SIZE, blur_threshold)
@@ -115,6 +181,10 @@ def capture_perfect(camera, MODEL_SIZE, max_capture, blur_threshold):
 	return None, None
 
 def get_image_id():
+	''' This function returns the string which contains date and time info.
+
+		returns:- image_id: <str>
+	'''
 	cdate = datetime.date.today()
 	now = datetime.datetime.now()
 	ctime = now.strftime("%H-%M-%S")
@@ -122,7 +192,12 @@ def get_image_id():
 	return image_id
 
 def gen_frames(camera): 
-	
+	''' This function continuesly captures and yields the frames after encoding it.
+
+		params:- camera: <cv2 camera object>
+
+		returns:- <byte>
+	'''
 	assert camera.isOpened(), 'Cannot capture source'
 	while True:
 		success, frame = camera.read()  
@@ -138,6 +213,18 @@ def gen_frames(camera):
 
 	
 def capture_and_predict(MODEL_SIZE, MAX_CAP, BLUR_THRESHOLD, interpreter, input_details, output_details):
+	''' This function captures the image using helper function "capture_perfect", performs the object 
+		detection using helper function "predict" and returns the result after precessing it.
+
+		params:- MODEL_SIZE: <tuple>
+				 MAX_CAP: <int>
+				 BLUR_THRESHOLD: <int>
+				 interpreter: <tflite object>
+				 input_details: <tf.tensor>
+				 output_details: <tf.tensor>
+		
+		returns:- results: <bytes>
+	'''
 	image_id = get_image_id()
 	img, original_img = capture_perfect(MODEL_SIZE, MAX_CAP, BLUR_THRESHOLD)
 
@@ -150,6 +237,14 @@ def capture_and_predict(MODEL_SIZE, MAX_CAP, BLUR_THRESHOLD, interpreter, input_
 	return None
 
 def detect_motion(frame1, frame2, motion_thresh):
+	''' This function detects the motion between two frames using background subtraction method.
+
+		params:- frame1: <numpy.ndarray>
+				 frame2: <numpy.ndarray>
+				 motion_thresh: <int>
+		
+		returns: frame2: <numpy.ndarray>
+	'''
 	diff = cv2.absdiff(frame1, frame2)
 	gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
 	blur = cv2.GaussianBlur(gray, (5,5), 0)
@@ -165,44 +260,22 @@ def detect_motion(frame1, frame2, motion_thresh):
 
 	return None
 
-def auto_detect_img(MODEL_SIZE, interpreter, input_details, output_details):
-	global AutoDetect
-	frame = None
-	camera = cv2.VideoCapture(0)
-
-	ret, frame1 = camera.read()
-	ret, frame2 = camera.read()
-
-	while AutoDetect and camera.isOpened():
-		frame = detect_motion(frame1, frame2)
-
-		if frame is not None:
-			input_array = prep_image(frame, MODEL_SIZE)
-			input_array = np.float32(input_array)
-			image_id = get_image_id()
-		
-			predictions = predict(interpreter, input_details, output_details, input_array, MODEL_SIZE[0])
-			cv2.imwrite("static/auto.jpg", frame)
-
-			if predictions[3][0] > 0:
-				results = process_predictions(predictions, image_id)
-			
-				img = open('static/auto.jpg', 'rb')
-			
-				data = {'data':results}
-				img = {'image': img}
-				r = requests.post(url="http://127.0.0.1:8000/get_auto", files=img, data=data)
-				print(r.status_code)
-		frame1 = frame2
-		ret, frame2 = camera.read()
-			
-	camera.release()
-	return None
-
 def get_space_info(path):
+	''' This function returns the storage space info of the path folder.
+
+		params:- path: <str>
+
+		returns:- <tuple>
+	'''
 	return shutil.disk_usage(path)
 
 def convert_to_dict(data_list):
+	''' This function converts the list data into dict.
+
+		params:- data_list: <list>
+				 
+		returns:- result_dict: <dict>
+	'''
 	result_dict = {}
 	for data in data_list:
 		result_dict[data[0]] = {'num_images': data[1],
@@ -210,54 +283,23 @@ def convert_to_dict(data_list):
 	return result_dict
 
 def delete_imgs(im_dir, img_list):
+	''' This function delets the image provided in img_list form the im_dir path.
+
+		params:- im_dir: <str>
+				 img_list: <list>
+
+		returns:- None 
+	'''
 	for img in img_list:
 		os.remove(im_dir+img)
 
 def get_available_img(image_dir):
+	''' This function returns the number of image availble at the image_dir
+
+		params:- image_dir: <str>
+
+		returns:- number: <int>
+	'''
 	img_list = os.listdir(image_dir)
 	return len(img_list)
-
-########################################################################################3
-def get_delete_imglist(image_dir, value, type_):
-	img_list = os.listdir(image_dir)
-	val = value.split('-')
-
-	result_list = []
-	for img in img_list:
-		date = img.split('(')[0]
-		y, m, d = date.split('-')
-
-		if type_ == 'day':
-			if d==val[0] and m==val[1] and y==val[2]:
-				result_list.append(img)
-		elif type_ == 'month':
-			if m==val[0] and y==val[1]:
-				result_list.append(img)
-		elif type_ == 'week':
-			_, w, _ = datetime.date(int(y), int(m), int(d)).isocalendar()
-			if y==val[1] and str(w)==val[0]:
-				result_list.append(img)
-	return result_list
-
-def update_database(type_, value):
-
-	if type_ == 'day':
-		d_data = database.get_data_id('database.db', 'Daily', 'Day', value)
-		database.delete_data('database.db', 'Daily', 'Day', value)
-		d, m, y = value.split('-')
-		m_data = database.get_data_id('database.db', 'Monthly', 'Month', m+'-'+y)
-		m_imgs, m_space = m_data[1]-d_data[1], m_data[2]-d_data[2]
-		database.update_data_id('database.db', 'Monthly', 'Month', m+'-'+y, m_imgs, m_space)
-
-		_, w, _ = datetime.date(int(y), int(m), int(d)).isocalendar()
-		w_data = database.get_data_id('database.db', 'Monthly', 'Month', w+'-'+y)
-		w_imgs, w_space = w_data[1]-d_data[1], w_data[2]-d_data[2]
-		database.update_data_id('database.db', 'Weekly', 'Week', w+'-'+y, w_imgs, w_space)
-
-	elif type_ == 'month':
-		database.delete_data('database.db', 'Monthly', 'Month', value)
-		for i in range(1,32):
-			database.delete_data('database.db', 'Daily', 'Day', i+'-'+value)
-		
-###############################################################################################
 
