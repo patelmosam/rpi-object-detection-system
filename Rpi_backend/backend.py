@@ -2,7 +2,7 @@ import tensorflow as tf
 import cv2
 import numpy as np
 import json
-from utils import *
+import utils
 import datetime
 import time
 import os
@@ -49,7 +49,7 @@ def capture(cap, MODEL_SIZE, blur_threshold=100):
 			if fm < blur_threshold:
 				return None, None
 			
-			input_array = prep_image(frame, MODEL_SIZE)
+			input_array = utils.prep_image(frame, MODEL_SIZE)
 			input_array = np.float32(input_array)
 			cap.release()
 			return input_array, frame
@@ -79,7 +79,7 @@ def predict(interpreter, input_details, output_details, input_array, input_size)
 	pred = [interpreter.get_tensor(output_details[i]['index']) for i in range(len(output_details))]
 
 	try:
-		boxes, pred_conf = filter_boxes(pred[0], pred[1], score_threshold=0.25, input_shape=tf.constant([input_size, input_size]))
+		boxes, pred_conf = utils.filter_boxes(pred[0], pred[1], score_threshold=0.25, input_shape=tf.constant([input_size, input_size]))
 		
 
 		boxes, scores, classes, valid_detections = tf.image.combined_non_max_suppression(
@@ -134,7 +134,7 @@ def get_class_names(classes):
 
 	returns:- names: <list>
 	"""
-	labels = read_class_names('coco.names')
+	labels = utils.read_class_names('coco.names')
 	names = '['
 	for cls in classes:
 		names += labels[cls] + ','

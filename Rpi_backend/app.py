@@ -35,8 +35,8 @@ def auto_detect_img(MODEL_SIZE, interpreter, input_details, output_details, moti
 			 motion_thresh <int>
 
 	returns:- None
-	"""
-    global AutoDetect
+    """
+	global AutoDetect
 	frame = None
 	camera = cv2.VideoCapture(0)
 	
