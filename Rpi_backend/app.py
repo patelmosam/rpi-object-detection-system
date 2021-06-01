@@ -14,6 +14,7 @@ MODEL_SIZE = (416, 416)
 CONFIG = None
 camera = None
 AutoDetect = False
+SERVER_ADD = "http://192.168.116.98:8000"
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
@@ -37,6 +38,7 @@ def auto_detect_img(MODEL_SIZE, interpreter, input_details, output_details, moti
 	returns:- None
     """
 	global AutoDetect
+	global CONFIG
 	frame = None
 	camera = cv2.VideoCapture(0)
 	
@@ -61,7 +63,7 @@ def auto_detect_img(MODEL_SIZE, interpreter, input_details, output_details, moti
 			
 				data = {'data':results}
 				img = {'image': img}
-				r = requests.post(url="http://127.0.0.1:8000/get_auto", files=img, data=data)
+				r = requests.post(url=CONFIG['SELF_ADDR']+"/get_auto", files=img, data=data)
 				print(r.status_code)
 		
 		frame1 = frame2
@@ -109,7 +111,7 @@ def capture_img():
 	camera = cv2.VideoCapture(0)
 	
 	if CONFIG is None:
-		r = requests.get('http://127.0.0.1:8000/config')
+		r = requests.get(SERVER_ADD+'/config')
 		CONFIG = r.json()
 
 	image_id = backend.get_image_id()
@@ -207,7 +209,7 @@ def auto_capture(tag):
 		camera = None
 
 	if CONFIG is None:
-		r = requests.get('http://127.0.0.1:8000/config')
+		r = requests.get(SERVER_ADD+'/config')
 		CONFIG = r.json()
 	
 	if tag == "1":
